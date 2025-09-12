@@ -348,8 +348,56 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 500);
     }
 
-    // Add event listeners for auto-calculation
-    providerSelect.addEventListener('change', scheduleAutoCalculate);
+    // Function to update procedure options based on selected provider
+    function updateProcedureOptions(provider) {
+        if (!provider) {
+            // If no provider selected, show all procedures
+            fetch('/api/procedures')
+                .then(response => response.json())
+                .then(procedures => {
+                    populateProcedureDropdowns(procedures);
+                })
+                .catch(error => console.error('Error fetching procedures:', error));
+        } else {
+            // Fetch procedures for the specific provider
+            fetch(`/api/procedures/${encodeURIComponent(provider)}`)
+                .then(response => response.json())
+                .then(procedures => {
+                    populateProcedureDropdowns(procedures);
+                })
+                .catch(error => console.error('Error fetching provider procedures:', error));
+        }
+    }
+
+    // Function to populate all procedure dropdowns
+    function populateProcedureDropdowns(procedures) {
+        const procedureSelects = document.querySelectorAll('.procedure-select');
+        
+        procedureSelects.forEach(select => {
+            const currentValue = select.value;
+            
+            // Clear and repopulate options
+            select.innerHTML = '<option value="">Select a procedure...</option>';
+            
+            procedures.forEach(procedure => {
+                const option = document.createElement('option');
+                option.value = procedure;
+                option.textContent = procedure;
+                select.appendChild(option);
+            });
+            
+            // Restore previous selection if it's still available
+            if (currentValue && procedures.includes(currentValue)) {
+                select.value = currentValue;
+            }
+        });
+    }
+
+    // Add event listeners for auto-calculation and procedure filtering
+    providerSelect.addEventListener('change', function() {
+        updateProcedureOptions(this.value);
+        scheduleAutoCalculate();
+    });
     
     // Add event listeners for checkboxes
     document.querySelectorAll('input[name="mitigating_factors"]').forEach(checkbox => {
@@ -358,6 +406,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize procedure event listeners
     addProcedureEventListeners();
+
+    // Initialize procedure options (load all procedures initially)
+    updateProcedureOptions('');
 
     // Initialize tooltips (if using Bootstrap tooltips)
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));

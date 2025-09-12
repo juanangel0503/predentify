@@ -66,6 +66,18 @@ def get_procedures():
     """API endpoint to get all procedures"""
     return jsonify(data_loader.get_procedures())
 
+@app.route('/api/procedures/<provider>')
+def get_procedures_for_provider(provider):
+    """API endpoint to get procedures that a specific provider can perform"""
+    all_procedures = data_loader.get_procedures()
+    compatible_procedures = []
+    
+    for procedure in all_procedures:
+        if data_loader.check_provider_performs_procedure(procedure, provider):
+            compatible_procedures.append(procedure)
+    
+    return jsonify(compatible_procedures)
+
 @app.route('/api/providers')
 def get_providers():
     """API endpoint to get all providers"""
