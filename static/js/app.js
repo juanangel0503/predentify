@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let procedureCount = 1;
     let allProcedures = [];
     let allProviders = [];
+    let isDataLoaded = false;
 
     // Handle form submission
     form.addEventListener('submit', function(e) {
@@ -163,35 +164,75 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Enhanced procedure loading with better error handling
+    function loadProceduresForProvider(provider) {
+        if (!provider) {
+            populateProcedureDropdowns(allProcedures);
+            return Promise.resolve();
+        }
+
+        return fetch('/api/procedures/' + encodeURIComponent(provider))
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(procedures => {
+                populateProcedureDropdowns(procedures);
+                return procedures;
+            })
+            .catch(error => {
+                console.error('Error fetching provider procedures:', error);
+                // Fallback to all procedures if provider-specific fetch fails
+                populateProcedureDropdowns(allProcedures);
+                displayError('Failed to load procedures for provider. Showing all procedures.');
+                return allProcedures;
+            });
+    }
+
+    // Enhanced provider loading with better error handling
+    function loadProvidersForProcedure(procedure) {
+        if (!procedure) {
+            populateProviderDropdown(allProviders);
+            return Promise.resolve();
+        }
+
+        return fetch('/api/providers/' + encodeURIComponent(procedure))
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(providers => {
+                populateProviderDropdown(providers);
+                return providers;
+            })
+            .catch(error => {
+                console.error('Error fetching procedure providers:', error);
+                // Fallback to all providers if procedure-specific fetch fails
+                populateProviderDropdown(allProviders);
+                displayError('Failed to load providers for procedure. Showing all providers.');
+                return allProviders;
+            });
+    }
+
     // Bidirectional filtering functions
     function updateProcedureOptions(provider) {
-        if (!provider) {
-            // If no provider selected, show all procedures
-            populateProcedureDropdowns(allProcedures);
-        } else {
-            // Fetch procedures for the specific provider
-            fetch('/api/procedures/' + encodeURIComponent(provider))
-                .then(response => response.json())
-                .then(procedures => {
-                    populateProcedureDropdowns(procedures);
-                })
-                .catch(error => console.error('Error fetching provider procedures:', error));
+        if (!isDataLoaded) {
+            console.warn('Data not loaded yet, skipping procedure update');
+            return;
         }
+        loadProceduresForProvider(provider);
     }
 
     function updateProviderOptions(procedure) {
-        if (!procedure) {
-            // If no procedure selected, show all providers
-            populateProviderDropdown(allProviders);
-        } else {
-            // Fetch providers for the specific procedure
-            fetch('/api/providers/' + encodeURIComponent(procedure))
-                .then(response => response.json())
-                .then(providers => {
-                    populateProviderDropdown(providers);
-                })
-                .catch(error => console.error('Error fetching procedure providers:', error));
+        if (!isDataLoaded) {
+            console.warn('Data not loaded yet, skipping provider update');
+            return;
         }
+        loadProvidersForProcedure(procedure);
     }
 
     function populateProcedureDropdowns(procedures) {
@@ -345,7 +386,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 mitigating_factors: mitigatingFactors
             })
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
             showLoading(false);
             displayResults(data);
@@ -532,24 +578,59 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize procedure event listeners
     addProcedureEventListeners();
 
-    // Load initial data
-    Promise.all([
-        fetch('/api/procedures').then(r => r.json()),
-        fetch('/api/providers').then(r => r.json())
-    ]).then(([procedures, providers]) => {
-        allProcedures = procedures;
-        allProviders = providers;
+    // Enhanced initial data loading with better error handling and loading states
+    function initializeApplication() {
+        console.log('Initializing application...');
         
-        // Initialize procedure options (load all procedures initially)
-        updateProcedureOptions('');
+        // Show loading state
+        showLoading(true);
         
-        // Initialize field visibility only if we have procedure items
-        if (document.querySelectorAll('.procedure-item').length > 0) {
-            updateFieldVisibility();
-        }
-    }).catch(error => {
-        console.error('Error loading initial data:', error);
-    });
+        Promise.all([
+            fetch('/api/procedures').then(response => {
+                if (!response.ok) {
+                    throw new Error(`Failed to load procedures: ${response.status}`);
+                }
+                return response.json();
+            }),
+            fetch('/api/providers').then(response => {
+                if (!response.ok) {
+                    throw new Error(`Failed to load providers: ${response.status}`);
+                }
+                return response.json();
+            })
+        ])
+        .then(([procedures, providers]) => {
+            console.log('Data loaded successfully:', {
+                procedures: procedures.length,
+                providers: providers.length
+            });
+            
+            allProcedures = procedures;
+            allProviders = providers;
+            isDataLoaded = true;
+            
+            // Initialize procedure options (load all procedures initially)
+            updateProcedureOptions('');
+            
+            // Initialize field visibility only if we have procedure items
+            if (document.querySelectorAll('.procedure-item').length > 0) {
+                updateFieldVisibility();
+            }
+            
+            // Hide loading state
+            showLoading(false);
+            
+            console.log('Application initialized successfully');
+        })
+        .catch(error => {
+            console.error('Error loading initial data:', error);
+            showLoading(false);
+            displayError('Failed to load application data. Please refresh the page.');
+        });
+    }
+
+    // Start the application initialization
+    initializeApplication();
 
     // Initialize tooltips (if using Bootstrap tooltips)
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
