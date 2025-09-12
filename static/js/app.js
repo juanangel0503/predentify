@@ -253,21 +253,36 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function calculateAppointmentTime() {
+        console.log('=== DEBUG: Starting calculateAppointmentTime ===');
+        
         const provider = document.getElementById('provider');
         if (!provider) {
+            console.error('Provider element not found');
             displayError('Provider selection not found.');
             return;
         }
         
         const providerValue = provider.value;
+        console.log('Provider value:', providerValue);
+        
         const procedures = [];
         
         // Collect all procedure data with null checks
-        document.querySelectorAll('.procedure-item').forEach((item, index) => {
+        const procedureItems = document.querySelectorAll('.procedure-item');
+        console.log('Found procedure items:', procedureItems.length);
+        
+        procedureItems.forEach((item, index) => {
             const procedureSelect = item.querySelector('.procedure-select');
             const teethInput = item.querySelector('.teeth-input');
             const quadrantsInput = item.querySelector('.quadrants-input');
             const surfacesInput = item.querySelector('.surfaces-input');
+            
+            console.log(`Procedure item ${index}:`, {
+                procedureSelect: !!procedureSelect,
+                teethInput: !!teethInput,
+                quadrantsInput: !!quadrantsInput,
+                surfacesInput: !!surfacesInput
+            });
             
             // Check if all required elements exist
             if (!procedureSelect || !teethInput || !quadrantsInput || !surfacesInput) {
@@ -280,6 +295,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const numQuadrants = parseInt(quadrantsInput.value) || 1;
             const numSurfaces = parseInt(surfacesInput.value) || 1;
             
+            console.log(`Procedure ${index} data:`, {
+                procedure: procedure,
+                numTeeth: numTeeth,
+                numQuadrants: numQuadrants,
+                numSurfaces: numSurfaces
+            });
+            
             if (procedure) {
                 procedures.push({
                     procedure: procedure,
@@ -290,10 +312,19 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
+        console.log('Collected procedures:', procedures);
+        
         // Collect mitigating factors
         const mitigatingFactors = [];
         document.querySelectorAll('input[name="mitigating_factors"]:checked').forEach(checkbox => {
             mitigatingFactors.push(checkbox.value);
+        });
+        
+        console.log('Validation check:', {
+            providerValue: providerValue,
+            proceduresLength: procedures.length,
+            hasProvider: !!providerValue,
+            hasProcedures: procedures.length > 0
         });
         
         if (!providerValue || procedures.length === 0) {
