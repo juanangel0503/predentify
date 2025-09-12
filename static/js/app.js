@@ -1,494 +1,367 @@
-// Global variables
-let procedures = [];
-let providers = [];
-let mitigatingFactors = [];
-let procedureIndex = 0;
+// PreDentify - Appointment Time Estimator JavaScript
 
-// Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
-    loadInitialData();
-    setupEventListeners();
-});
-
-// Load initial data from server
-async function loadInitialData() {
-    try {
-        // Load procedures, providers, and mitigating factors
-        const [proceduresResponse, providersResponse, factorsResponse] = await Promise.all([
-            fetch('/api/procedures'),
-            fetch('/api/providers'),
-            fetch('/api/mitigating_factors')
-        ]);
-
-        procedures = await proceduresResponse.json();
-        providers = await providersResponse.json();
-        mitigatingFactors = await factorsResponse.json();
-
-        // Populate initial dropdowns
-        populateProviderDropdown();
-        populateProcedureDropdown(0);
-        populateMitigatingFactors();
-
-    } catch (error) {
-        console.error('Error loading initial data:', error);
-        displayError('Failed to load data. Please refresh the page.');
-    }
-}
-
-// Setup event listeners
-function setupEventListeners() {
-    // Form submission
-    document.getElementById('estimationForm').addEventListener('submit', handleFormSubmit);
+    const form = document.getElementById('estimationForm');
+    const resultsDiv = document.getElementById('results');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const providerAlert = document.getElementById('providerAlert');
+    const proceduresContainer = document.getElementById('proceduresContainer');
+    const addProcedureBtn = document.getElementById('addProcedure');
     
-    // Add procedure button
-    document.getElementById('addProcedure').addEventListener('click', addProcedure);
-    
-    // Provider change - filter procedures
-    document.getElementById('provider').addEventListener('change', function() {
-        const selectedProvider = this.value;
-        if (selectedProvider) {
-            filterProceduresByProvider(selectedProvider);
-        } else {
-            // Reset all procedure dropdowns to show all procedures
-            document.querySelectorAll('.procedure-select').forEach(select => {
-                populateProcedureDropdown(select.closest('.procedure-item').dataset.procedureIndex);
-            });
-        }
+    let procedureCount = 1;
+
+    // Handle form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        calculateAppointmentTime();
     });
-    
-    // Procedure change - filter providers and show/hide fields
-    document.addEventListener('change', function(e) {
-        if (e.target.classList.contains('procedure-select')) {
-            const procedureIndex = e.target.closest('.procedure-item').dataset.procedureIndex;
-            const selectedProcedure = e.target.value;
-            
-            if (selectedProcedure) {
-                filterProvidersByProcedure(selectedProcedure);
-                showHideFields(procedureIndex, selectedProcedure);
-            }
-        }
+
+    // Add procedure functionality
+    addProcedureBtn.addEventListener('click', function() {
+        addProcedureRow();
     });
-    
-    // Teeth change - show/hide quadrants
-    document.addEventListener('input', function(e) {
-        if (e.target.name && e.target.name.includes('[num_teeth]')) {
-            const procedureIndex = e.target.closest('.procedure-item').dataset.procedureIndex;
-            const numTeeth = parseInt(e.target.value) || 1;
-            showHideQuadrants(procedureIndex, numTeeth);
-        }
-    });
-    
-    // Remove procedure buttons
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('.remove-procedure')) {
-            const procedureItem = e.target.closest('.procedure-item');
-            removeProcedure(procedureItem);
-        }
-    });
-}
 
-// Populate provider dropdown
-function populateProviderDropdown() {
-    const providerSelect = document.getElementById('provider');
-    providerSelect.innerHTML = '<option value="">Select a provider...</option>';
-    
-    providers.forEach(provider => {
-        const option = document.createElement('option');
-        option.value = provider;
-        option.textContent = provider;
-        providerSelect.appendChild(option);
-    });
-}
-
-// Populate procedure dropdown for a specific procedure index
-async function populateProcedureDropdown(procedureIndex, filteredProcedures = null) {
-    const procedureSelect = document.querySelector(`[data-procedure-index="${procedureIndex}"] .procedure-select`);
-    if (!procedureSelect) return;
-    
-    procedureSelect.innerHTML = '<option value="">Select a procedure...</option>';
-    
-    const proceduresToShow = filteredProcedures || procedures;
-    
-    proceduresToShow.forEach(procedure => {
-        const option = document.createElement('option');
-        option.value = procedure;
-        option.textContent = procedure;
-        procedureSelect.appendChild(option);
-    });
-}
-
-// Filter procedures by provider
-async function filterProceduresByProvider(provider) {
-    try {
-        const response = await fetch(`/api/procedures/${encodeURIComponent(provider)}`);
-        const filteredProcedures = await response.json();
-        
-        // Update all procedure dropdowns
-        document.querySelectorAll('.procedure-select').forEach(select => {
-            const procedureIndex = select.closest('.procedure-item').dataset.procedureIndex;
-            populateProcedureDropdown(procedureIndex, filteredProcedures);
-        });
-        
-        // Clear any invalid procedure selections
-        document.querySelectorAll('.procedure-select').forEach(select => {
-            if (select.value && !filteredProcedures.includes(select.value)) {
-                select.value = '';
-                const procedureIndex = select.closest('.procedure-item').dataset.procedureIndex;
-                showHideFields(procedureIndex, '');
-            }
-        });
-        
-    } catch (error) {
-        console.error('Error filtering procedures:', error);
-    }
-}
-
-// Filter providers by procedure
-async function filterProvidersByProcedure(procedure) {
-    try {
-        const response = await fetch(`/api/providers/${encodeURIComponent(procedure)}`);
-        const filteredProviders = await response.json();
-        
-        const providerSelect = document.getElementById('provider');
-        const currentProvider = providerSelect.value;
-        
-        // Update provider dropdown
-        providerSelect.innerHTML = '<option value="">Select a provider...</option>';
-        
-        filteredProviders.forEach(provider => {
-            const option = document.createElement('option');
-            option.value = provider;
-            option.textContent = provider;
-            providerSelect.appendChild(option);
-        });
-        
-        // Clear provider if it's not valid for this procedure
-        if (currentProvider && !filteredProviders.includes(currentProvider)) {
-            providerSelect.value = '';
-        }
-        
-    } catch (error) {
-        console.error('Error filtering providers:', error);
-    }
-}
-
-// Show/hide fields based on procedure type
-function showHideFields(procedureIndex, procedure) {
-    const surfacesDiv = document.getElementById(`surfaces-${procedureIndex}`);
-    const canalsDiv = document.getElementById(`canals-${procedureIndex}`);
-    
-    // Hide both initially
-    if (surfacesDiv) surfacesDiv.style.display = 'none';
-    if (canalsDiv) canalsDiv.style.display = 'none';
-    
-    // Show appropriate field based on procedure type
-    if (procedure) {
-        const procedureLower = procedure.toLowerCase();
-        
-        if (procedureLower.includes('filling')) {
-            if (surfacesDiv) surfacesDiv.style.display = 'block';
-        } else if (procedureLower.includes('root canal')) {
-            if (canalsDiv) canalsDiv.style.display = 'block';
-        }
-    }
-}
-
-// Show/hide quadrants based on number of teeth
-function showHideQuadrants(procedureIndex, numTeeth) {
-    const quadrantsDiv = document.getElementById(`quadrants-${procedureIndex}`);
-    if (quadrantsDiv) {
-        quadrantsDiv.style.display = numTeeth > 1 ? 'block' : 'none';
-    }
-}
-
-// Populate mitigating factors
-function populateMitigatingFactors() {
-    const container = document.getElementById('mitigatingFactors');
-    container.innerHTML = '';
-    
-    mitigatingFactors.forEach(factor => {
-        const div = document.createElement('div');
-        div.className = 'form-check';
-        
-        div.innerHTML = `
-            <input class="form-check-input" type="checkbox" name="mitigating_factors" 
-                   value="${factor.name}" id="factor_${factor.name.replace(/\s+/g, '_')}">
-            <label class="form-check-label" for="factor_${factor.name.replace(/\s+/g, '_')}">
-                ${factor.name}
-                ${factor.is_multiplier ? 
-                    `<small class="text-muted"> (×${factor.multiplier})</small>` : 
-                    `<small class="text-muted"> (+${factor.additional_time} min)</small>`
-                }
-            </label>
+    function addProcedureRow() {
+        const procedureHtml = `
+            <div class="procedure-item border rounded p-3 mb-3">
+                <div class="row align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label small">Procedure</label>
+                        <select class="form-select procedure-select" name="procedures[${procedureCount}][procedure]" required>
+                            <option value="">Select procedure...</option>
+                            ${getProcedureOptions()}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">Teeth</label>
+                        <input type="number" class="form-control" name="procedures[${procedureCount}][num_teeth]" 
+                               value="1" min="1" max="32" placeholder="1">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">Quadrants</label>
+                        <input type="number" class="form-control" name="procedures[${procedureCount}][num_quadrants]" 
+                               value="1" min="1" max="4" placeholder="1">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">Surfaces/Canals</label>
+                        <input type="number" class="form-control" name="procedures[${procedureCount}][num_surfaces]" 
+                               value="1" min="1" max="10" placeholder="1">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-danger btn-sm remove-procedure">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
         `;
         
-        container.appendChild(div);
-    });
-}
-
-// Add new procedure
-function addProcedure() {
-    procedureIndex++;
-    
-    const container = document.getElementById('proceduresContainer');
-    const newProcedure = document.createElement('div');
-    newProcedure.className = 'procedure-item border rounded p-3 mb-3';
-    newProcedure.setAttribute('data-procedure-index', procedureIndex);
-    
-    newProcedure.innerHTML = `
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <h6 class="mb-0">Procedure ${procedureIndex + 1}</h6>
-            <button type="button" class="btn btn-sm btn-outline-danger remove-procedure">
-                <i class="fas fa-trash"></i>
-            </button>
-        </div>
+        proceduresContainer.insertAdjacentHTML('beforeend', procedureHtml);
+        procedureCount++;
         
-        <!-- Procedure Selection -->
-        <div class="mb-3">
-            <label class="form-label">Procedure</label>
-            <select class="form-select procedure-select" name="procedures[${procedureIndex}][procedure]" required>
-                <option value="">Select a procedure...</option>
-            </select>
-        </div>
-
-        <!-- Number of Teeth -->
-        <div class="mb-3">
-            <label class="form-label">Number of Teeth</label>
-            <input type="number" class="form-control" name="procedures[${procedureIndex}][num_teeth]" 
-                   value="1" min="1" max="32" required>
-        </div>
-
-        <!-- Quadrants (only show if more than 1 tooth) -->
-        <div class="mb-3" id="quadrants-${procedureIndex}" style="display: none;">
-            <label class="form-label">Number of Quadrants</label>
-            <input type="number" class="form-control" name="procedures[${procedureIndex}][num_quadrants]" 
-                   value="1" min="1" max="4">
-        </div>
-
-        <!-- Surfaces (only show for fillings) -->
-        <div class="mb-3" id="surfaces-${procedureIndex}" style="display: none;">
-            <label class="form-label">Number of Surfaces</label>
-            <input type="number" class="form-control" name="procedures[${procedureIndex}][num_surfaces]" 
-                   value="1" min="1" max="5">
-        </div>
-
-        <!-- Canals (only show for root canals) -->
-        <div class="mb-3" id="canals-${procedureIndex}" style="display: none;">
-            <label class="form-label">Number of Canals</label>
-            <input type="number" class="form-control" name="procedures[${procedureIndex}][num_surfaces]" 
-                   value="1" min="1" max="4">
-        </div>
-    `;
-    
-    container.appendChild(newProcedure);
-    
-    // Populate the new procedure dropdown
-    const selectedProvider = document.getElementById('provider').value;
-    if (selectedProvider) {
-        filterProceduresByProvider(selectedProvider);
-    } else {
-        populateProcedureDropdown(procedureIndex);
+        // Show remove buttons for all procedures if more than one
+        updateRemoveButtons();
+        
+        // Add event listeners to new inputs
+        addProcedureEventListeners();
     }
-    
-    // Show remove buttons for all procedures if more than one
-    updateRemoveButtons();
-}
 
-// Remove procedure
-function removeProcedure(procedureItem) {
-    procedureItem.remove();
-    updateRemoveButtons();
-    updateProcedureNumbers();
-}
-
-// Update remove buttons visibility
-function updateRemoveButtons() {
-    const procedureItems = document.querySelectorAll('.procedure-item');
-    const removeButtons = document.querySelectorAll('.remove-procedure');
-    
-    removeButtons.forEach(button => {
-        button.style.display = procedureItems.length > 1 ? 'block' : 'none';
-    });
-}
-
-// Update procedure numbers
-function updateProcedureNumbers() {
-    const procedureItems = document.querySelectorAll('.procedure-item');
-    procedureItems.forEach((item, index) => {
-        const title = item.querySelector('h6');
-        if (title) {
-            title.textContent = `Procedure ${index + 1}`;
+    function getProcedureOptions() {
+        const firstSelect = document.querySelector('.procedure-select');
+        if (firstSelect) {
+            return firstSelect.innerHTML;
         }
-    });
-}
+        return '';
+    }
 
-// Handle form submission
-async function handleFormSubmit(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(e.target);
-    const provider = formData.get('provider');
-    const mitigatingFactors = formData.getAll('mitigating_factors');
-    
-    // Collect procedure data
-    const proceduresData = [];
-    const procedureItems = document.querySelectorAll('.procedure-item');
-    
-    procedureItems.forEach(item => {
-        const procedure = item.querySelector('.procedure-select').value;
-        const numTeeth = parseInt(item.querySelector('input[name*="[num_teeth]"]').value) || 1;
-        const numSurfaces = parseInt(item.querySelector('input[name*="[num_surfaces]"]').value) || 1;
-        const numQuadrants = parseInt(item.querySelector('input[name*="[num_quadrants]"]').value) || 1;
+    function updateRemoveButtons() {
+        const procedureItems = document.querySelectorAll('.procedure-item');
+        const removeButtons = document.querySelectorAll('.remove-procedure');
         
-        if (procedure) {
-            proceduresData.push({
-                procedure: procedure,
-                num_teeth: numTeeth,
-                num_surfaces: numSurfaces,
-                num_quadrants: numQuadrants
+        removeButtons.forEach((btn, index) => {
+            btn.style.display = procedureItems.length > 1 ? 'block' : 'none';
+        });
+    }
+
+    function addProcedureEventListeners() {
+        // Add event listeners to all procedure inputs
+        document.querySelectorAll('.procedure-select, .procedure-item input[type="number"]').forEach(input => {
+            input.addEventListener('change', scheduleAutoCalculate);
+        });
+        
+        // Add event listeners to remove buttons
+        document.querySelectorAll('.remove-procedure').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.closest('.procedure-item').remove();
+                updateRemoveButtons();
+                scheduleAutoCalculate();
             });
-        }
-    });
-    
-    if (proceduresData.length === 0) {
-        displayError('Please select at least one procedure.');
-        return;
-    }
-    
-    if (!provider) {
-        displayError('Please select a provider.');
-        return;
-    }
-    
-    await calculateAppointmentTime(proceduresData, provider, mitigatingFactors);
-}
-
-// Calculate appointment time
-async function calculateAppointmentTime(proceduresData, provider, mitigatingFactors) {
-    try {
-        showLoading();
-        
-        const response = await fetch('/estimate', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                provider: provider,
-                procedures_data: proceduresData,
-                mitigating_factors: mitigatingFactors
-            })
         });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            displayResults(result);
-        } else {
-            displayError(result.error || 'Calculation failed');
-        }
-        
-    } catch (error) {
-        console.error('Error calculating appointment time:', error);
-        displayError('Failed to calculate appointment time. Please try again.');
     }
-}
 
-// Display results
-function displayResults(result) {
-    const resultsDiv = document.getElementById('results');
-    
-    let html = `
-        <div class="alert alert-success">
-            <h5><i class="fas fa-check-circle me-2"></i>Calculation Complete</h5>
-        </div>
-        
-        <div class="row mb-4">
-            <div class="col-4">
-                <div class="text-center">
-                    <div class="h3 text-primary">${result.final_times.total_time}</div>
-                    <small class="text-muted">Total Time (min)</small>
-                </div>
-            </div>
-            <div class="col-4">
-                <div class="text-center">
-                    <div class="h4 text-info">${result.final_times.doctor_time}</div>
-                    <small class="text-muted">Doctor Time (min)</small>
-                </div>
-            </div>
-            <div class="col-4">
-                <div class="text-center">
-                    <div class="h4 text-success">${result.final_times.assistant_time}</div>
-                    <small class="text-muted">Assistant Time (min)</small>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Show procedure breakdown
-    if (result.procedures && result.procedures.length > 0) {
-        html += '<h6>Procedure Breakdown:</h6>';
-        html += '<div class="table-responsive">';
-        html += '<table class="table table-sm">';
-        html += '<thead><tr><th>Procedure</th><th>Teeth</th><th>Time</th><th>Notes</th></tr></thead>';
-        html += '<tbody>';
-        
-        result.procedures.forEach((proc, index) => {
-            const isReduced = proc.is_reduced;
-            const notes = isReduced ? '<span class="badge bg-warning">30% reduced</span>' : '';
+    async function calculateAppointmentTime() {
+        // Show loading spinner
+        showLoading(true);
+        hideProviderAlert();
+
+        try {
+            // Gather form data
+            const formData = new FormData(form);
+            const provider = formData.get('provider');
+            const mitigatingFactors = formData.getAll('mitigating_factors');
             
+            // Collect procedures data
+            const procedures = [];
+            const procedureItems = document.querySelectorAll('.procedure-item');
+            
+            procedureItems.forEach((item, index) => {
+                const procedure = item.querySelector('.procedure-select').value;
+                const numTeeth = parseInt(item.querySelector('input[name*="num_teeth"]').value) || 1;
+                const numQuadrants = parseInt(item.querySelector('input[name*="num_quadrants"]').value) || 1;
+                const numSurfaces = parseInt(item.querySelector('input[name*="num_surfaces"]').value) || 1;
+                
+                if (procedure) {
+                    procedures.push({
+                        procedure: procedure,
+                        num_teeth: numTeeth,
+                        num_quadrants: numQuadrants,
+                        num_surfaces: numSurfaces
+                    });
+                }
+            });
+
+            // Validate required fields
+            if (!provider || procedures.length === 0) {
+                throw new Error('Please select a provider and at least one procedure.');
+            }
+
+            // Prepare request data
+            const requestData = {
+                provider: provider,
+                mitigating_factors: mitigatingFactors,
+                procedures: procedures
+            };
+
+            // Make API call
+            const response = await fetch('/estimate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData)
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to calculate appointment time');
+            }
+
+            // Display results
+            displayResults(data);
+
+        } catch (error) {
+            displayError(error.message);
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    function displayResults(data) {
+        if (!data.success) {
+            if (data.warning) {
+                showProviderAlert();
+            }
+            displayError(data.error);
+            return;
+        }
+
+        const { procedures, provider, base_times, final_times, applied_factors } = data;
+
+        let html = `
+            <div class="fade-in">
+                <h6 class="text-primary mb-3">
+                    <i class="fas fa-check-circle me-2"></i>
+                    ${procedures.length} Procedure${procedures.length > 1 ? 's' : ''} - ${provider}
+                </h6>
+        `;
+
+        // Show procedure details
+        if (procedures.length > 1) {
             html += `
-                <tr>
-                    <td>${proc.procedure}</td>
-                    <td>${proc.num_teeth}</td>
-                    <td>${proc.individual_times.total_time} min</td>
-                    <td>${notes}</td>
-                </tr>
+                <div class="mb-3">
+                    <h6 class="text-secondary">Procedure Details:</h6>
             `;
-        });
-        
-        html += '</tbody></table></div>';
-    }
-    
-    // Show mitigating factors if any
-    if (result.mitigating_factors && (result.mitigating_factors.multiplier !== 1 || result.mitigating_factors.additional_time > 0)) {
-        html += '<h6 class="mt-3">Applied Factors:</h6>';
-        html += '<ul class="list-unstyled">';
-        
-        if (result.mitigating_factors.multiplier !== 1) {
-            html += `<li><i class="fas fa-times me-1"></i>Multiplier: ×${result.mitigating_factors.multiplier}</li>`;
+            procedures.forEach((proc, index) => {
+                html += `
+                    <div class="small text-muted mb-1">
+                        ${index + 1}. ${proc.procedure} (${proc.num_teeth} tooth${proc.num_teeth > 1 ? 's' : ''}, 
+                        ${proc.num_quadrants} quadrant${proc.num_quadrants > 1 ? 's' : ''}, 
+                        ${proc.num_surfaces} surface${proc.num_surfaces > 1 ? 's' : ''}/canal${proc.num_surfaces > 1 ? 's' : ''})
+                    </div>
+                `;
+            });
+            html += '</div>';
+        } else {
+            const proc = procedures[0];
+            html += `
+                <div class="mb-2">
+                    <small class="text-muted">
+                        <strong>Details:</strong> ${proc.num_teeth} tooth${proc.num_teeth > 1 ? 's' : ''}, 
+                        ${proc.num_quadrants} quadrant${proc.num_quadrants > 1 ? 's' : ''}, 
+                        ${proc.num_surfaces} surface${proc.num_surfaces > 1 ? 's' : ''}/canal${proc.num_surfaces > 1 ? 's' : ''}
+                    </small>
+                </div>
+            `;
         }
         
-        if (result.mitigating_factors.additional_time > 0) {
-            html += `<li><i class="fas fa-plus me-1"></i>Additional time: +${result.mitigating_factors.additional_time} min</li>`;
+        html += `
+                <div class="time-breakdown success-state">
+                    <div class="time-item">
+                        <div class="time-label">
+                            <i class="fas fa-user-nurse text-info"></i>
+                            Assistant Time
+                        </div>
+                        <div class="time-value">${final_times.assistant_time} min</div>
+                    </div>
+                    
+                    <div class="time-item">
+                        <div class="time-label">
+                            <i class="fas fa-user-md text-success"></i>
+                            Doctor Time
+                        </div>
+                        <div class="time-value">${final_times.doctor_time} min</div>
+                    </div>
+                    
+                    <div class="time-item">
+                        <div class="time-label">
+                            <i class="fas fa-clock text-primary"></i>
+                            Total Time
+                        </div>
+                        <div class="time-value">${final_times.total_time} min</div>
+                    </div>
+                </div>
+        `;
+
+        // Show base times if different from final times
+        if (hasAppliedFactors(base_times, final_times) || hasTeethAdjustments(procedures)) {
+            html += `
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <strong>Base Times:</strong> 
+                        Assistant: ${base_times.assistant_time} min, 
+                        Doctor: ${base_times.doctor_time} min, 
+                        Total: ${base_times.total_time} min
+                    </small>
+                </div>
+            `;
         }
+
+        // Show applied factors
+        if (applied_factors && applied_factors.length > 0) {
+            html += `
+                <div class="applied-factors mt-3">
+                    <h6 class="mb-2">
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                        Applied Factors
+                    </h6>
+            `;
+            
+            applied_factors.forEach(factor => {
+                const multiplierText = factor.multiplier > 2 
+                    ? `+${factor.multiplier} min` 
+                    : `${factor.multiplier}x`;
+                
+                html += `
+                    <div class="factor-item">
+                        <span>${factor.name}</span>
+                        <span class="text-warning fw-bold">${multiplierText}</span>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+        }
+
+        html += '</div>';
         
-        html += '</ul>';
+        resultsDiv.innerHTML = html;
+
+        // Show provider warning if applicable
+        if (data.warning) {
+            showProviderAlert();
+        }
     }
-    
-    resultsDiv.innerHTML = html;
-}
 
-// Display error
-function displayError(message) {
-    const resultsDiv = document.getElementById('results');
-    resultsDiv.innerHTML = `
-        <div class="alert alert-danger">
-            <h5><i class="fas fa-exclamation-triangle me-2"></i>Error</h5>
-            <p class="mb-0">${message}</p>
-        </div>
-    `;
-}
-
-// Show loading state
-function showLoading() {
-    const resultsDiv = document.getElementById('results');
-    resultsDiv.innerHTML = `
-        <div class="text-center">
-            <div class="spinner-border text-primary mb-3" role="status">
-                <span class="visually-hidden">Loading...</span>
+    function displayError(message) {
+        const html = `
+            <div class="fade-in error-state">
+                <div class="text-center text-danger">
+                    <i class="fas fa-exclamation-circle fa-3x mb-3"></i>
+                    <h6>Error</h6>
+                    <p>${message}</p>
+                </div>
             </div>
-            <p>Calculating appointment time...</p>
-        </div>
-    `;
-}
+        `;
+        resultsDiv.innerHTML = html;
+    }
+
+    function hasAppliedFactors(baseTimes, finalTimes) {
+        return baseTimes.assistant_time !== finalTimes.assistant_time ||
+               baseTimes.doctor_time !== finalTimes.doctor_time ||
+               baseTimes.total_time !== finalTimes.total_time;
+    }
+
+    function hasTeethAdjustments(procedures) {
+        return procedures.some(proc => 
+            proc.teeth_adjustments && (
+                proc.teeth_adjustments.assistant_time > 0 || 
+                proc.teeth_adjustments.doctor_time > 0 || 
+                proc.teeth_adjustments.total_time > 0
+            )
+        );
+    }
+
+    function showLoading(show) {
+        loadingSpinner.style.display = show ? 'block' : 'none';
+    }
+
+    function showProviderAlert() {
+        providerAlert.style.display = 'block';
+    }
+
+    function hideProviderAlert() {
+        providerAlert.style.display = 'none';
+    }
+
+    // Auto-calculate when form changes
+    const providerSelect = document.getElementById('provider');
+    
+    let autoCalculateTimeout;
+    
+    function scheduleAutoCalculate() {
+        clearTimeout(autoCalculateTimeout);
+        autoCalculateTimeout = setTimeout(() => {
+            if (providerSelect.value && document.querySelector('.procedure-select').value) {
+                calculateAppointmentTime();
+            }
+        }, 500);
+    }
+
+    // Add event listeners for auto-calculation
+    providerSelect.addEventListener('change', scheduleAutoCalculate);
+    
+    // Add event listeners for checkboxes
+    document.querySelectorAll('input[name="mitigating_factors"]').forEach(checkbox => {
+        checkbox.addEventListener('change', scheduleAutoCalculate);
+    });
+
+    // Initialize procedure event listeners
+    addProcedureEventListeners();
+
+    // Initialize tooltips (if using Bootstrap tooltips)
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
