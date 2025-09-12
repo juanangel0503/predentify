@@ -21,48 +21,52 @@ class ProcedureDataLoader:
             print(f"Error loading Excel file: {e}")
             raise
     
-    def get_procedures(self) -> List[str]:
-        """Get list of all available procedures"""
+    def _apply_procedure_name_changes(self, procedure: str) -> str:
+        """Apply procedure name changes as requested"""
+        name_changes = {
+            'Crown': 'Crown preparation',
+            'Implant': 'Implant surgery'
+        }
+        return name_changes.get(procedure, procedure)
+    
+    def get_procedures(self, provider: str = None) -> List[str]:
+        """Get list of all available procedures, optionally filtered by provider"""
         if self.df is None:
             return []
         
         procedures = self.df['Procedure 1'].dropna().unique().tolist()
-        return sorted([str(proc) for proc in procedures if str(proc) != 'nan'])
+        procedure_list = sorted([str(proc) for proc in procedures if str(proc) != 'nan'])
+        
+        # Apply procedure name changes
+        procedure_list = [self._apply_procedure_name_changes(proc) for proc in procedure_list]
+        
+        # Filter by provider if specified
+        if provider:
+            procedure_list = [proc for proc in procedure_list if self.check_provider_performs_procedure(proc, provider)]
+        
+        return procedure_list
     
-    def get_providers(self) -> List[str]:
-        """Get list of all available providers"""
+    def get_providers(self, procedure: str = None) -> List[str]:
+        """Get list of all available providers, optionally filtered by procedure"""
         # Based on the Excel analysis, these are the provider columns
         providers = ['Miekella', 'Kayla', 'Radin', 'Marina', 'Monse', 
                     'Jessica', 'Amber', 'Kym', 'Natalia', 'Hygiene']
+        
+        # Filter by procedure if specified
+        if procedure:
+            # Convert back to original name for lookup
+            original_procedure = self._get_original_procedure_name(procedure)
+            providers = [prov for prov in providers if self.check_provider_performs_procedure(original_procedure, prov)]
+        
         return providers
     
-    def get_provider_procedure_compatibility(self) -> Dict[str, List[str]]:
-        """Get provider -> procedures compatibility matrix"""
-        compatibility = {}
-        providers = self.get_providers()
-        procedures = self.get_procedures()
-        
-        for provider in providers:
-            compatibility[provider] = []
-            for procedure in procedures:
-                if self.check_provider_performs_procedure(procedure, provider):
-                    compatibility[provider].append(procedure)
-        
-        return compatibility
-    
-    def get_procedure_provider_compatibility(self) -> Dict[str, List[str]]:
-        """Get procedure -> providers compatibility matrix"""
-        compatibility = {}
-        procedures = self.get_procedures()
-        providers = self.get_providers()
-        
-        for procedure in procedures:
-            compatibility[procedure] = []
-            for provider in providers:
-                if self.check_provider_performs_procedure(procedure, provider):
-                    compatibility[procedure].append(provider)
-        
-        return compatibility
+    def _get_original_procedure_name(self, display_name: str) -> str:
+        """Convert display name back to original name for Excel lookup"""
+        reverse_changes = {
+            'Crown preparation': 'Crown',
+            'Implant surgery': 'Implant'
+        }
+        return reverse_changes.get(display_name, display_name)
     
     def get_mitigating_factors(self) -> List[Dict[str, Any]]:
         """Get list of all mitigating factors with their multipliers"""
@@ -77,33 +81,40 @@ class ProcedureDataLoader:
             factor_name = str(row['Mitigating Factor']).strip()
             multiplier = row['Duration or Multiplier']
             
-            if factor_name and factor_name != 'nan':
-                factors.append({
-                    'name': factor_name,
-                    'multiplier': float(multiplier) if pd.notna(multiplier) else 1.0
-                })
+            # Determine if it's a multiplier or additional time
+            is_multiplier = isinstance(multiplier, (int, float)) and multiplier > 0 and multiplier != 1
+            
+            factors.append({
+                'name': factor_name,
+                'multiplier': multiplier if is_multiplier else 1,
+                'additional_time': 0 if is_multiplier else multiplier,
+                'is_multiplier': is_multiplier
+            })
         
         return factors
     
-    def get_procedure_base_times(self, procedure: str) -> Dict[str, Any]:
-        """Get base times for a specific procedure"""
+    def get_procedure_base_times(self, procedure: str) -> Dict[str, float]:
+        """Get base times for a procedure from the first available provider"""
         if self.df is None:
-            return {}
+            return {'assistant_time': 0, 'doctor_time': 0, 'total_time': 0}
+        
+        # Convert display name back to original for lookup
+        original_procedure = self._get_original_procedure_name(procedure)
         
         # Find the procedure row
-        procedure_row = self.df[self.df['Procedure 1'] == procedure]
+        procedure_row = self.df[self.df['Procedure 1'] == original_procedure]
         
         if procedure_row.empty:
-            return {}
+            return {'assistant_time': 0, 'doctor_time': 0, 'total_time': 0}
         
         row = procedure_row.iloc[0]
         
-        # Get base times - FIXED: Use Duration Total as the primary time
-        assistant_time = row.get('Assistant/Hygienist Time', 0)
-        doctor_time = row.get('Doctor Time', 0)
+        # Get times from Duration Total column (this is the correct total time)
         total_time = row.get('Duration Total', 0)
+        assistant_time = row.get('Assistant Time', 0)
+        doctor_time = row.get('Doctor Time', 0)
         
-        # Handle NaN values
+        # Convert to float and handle NaN values
         assistant_time = float(assistant_time) if pd.notna(assistant_time) else 0
         doctor_time = float(doctor_time) if pd.notna(doctor_time) else 0
         total_time = float(total_time) if pd.notna(total_time) else 0
@@ -123,8 +134,11 @@ class ProcedureDataLoader:
         if self.df is None:
             return False
         
+        # Convert display name back to original for lookup
+        original_procedure = self._get_original_procedure_name(procedure)
+        
         # Find the procedure row
-        procedure_row = self.df[self.df['Procedure 1'] == procedure]
+        procedure_row = self.df[self.df['Procedure 1'] == original_procedure]
         
         if procedure_row.empty or provider not in procedure_row.columns:
             return False
@@ -133,179 +147,118 @@ class ProcedureDataLoader:
         performs = procedure_row.iloc[0].get(provider, 0)
         return bool(performs) if pd.notna(performs) else False
     
-    def calculate_teeth_surfaces_time(self, procedure: str, num_teeth: int, 
-                                    num_surfaces: int, num_quadrants: int) -> Dict[str, Any]:
-        """
-        Calculate time adjustments based on teeth, surfaces, and quadrants
-        Using EXACT formulas extracted from the Excel spreadsheet
-        Returns either adjustments or absolute overrides
-        """
-        result = {
+    def calculate_teeth_surfaces_time(self, procedure: str, num_teeth: int = 1, 
+                                    num_surfaces: int = 1, num_quadrants: int = 1) -> Dict[str, float]:
+        """Calculate additional time based on number of teeth, surfaces, and quadrants"""
+        # More realistic time adjustments based on dental practice
+        time_adjustments = {
             'assistant_time': 0,
             'doctor_time': 0,
-            'total_time': 0,
-            'is_absolute_override': False  # Flag to indicate if this should replace base times completely
+            'total_time': 0
         }
         
-        procedure_lower = procedure.lower()
+        # Convert display name back to original for lookup
+        original_procedure = self._get_original_procedure_name(procedure)
         
-        # EXACT EXCEL FORMULAS IMPLEMENTATION - These calculate ABSOLUTE times, not adjustments
+        # Procedure-specific time calculations - IMPROVED ACCURACY
+        if 'filling' in original_procedure.lower():
+            # Fillings: +15 min per additional tooth, +10 min per additional surface
+            time_adjustments['assistant_time'] += (num_teeth - 1) * 3
+            time_adjustments['doctor_time'] += (num_teeth - 1) * 12
+            time_adjustments['assistant_time'] += (num_surfaces - 1) * 2
+            time_adjustments['doctor_time'] += (num_surfaces - 1) * 8
+            time_adjustments['total_time'] += (num_teeth - 1) * 15 + (num_surfaces - 1) * 10
+            
+        elif 'crown' in original_procedure.lower():
+            # Crowns: +20 min per additional tooth
+            time_adjustments['assistant_time'] += (num_teeth - 1) * 4
+            time_adjustments['doctor_time'] += (num_teeth - 1) * 16
+            time_adjustments['total_time'] += (num_teeth - 1) * 20
+            
+        elif 'root canal' in original_procedure.lower():
+            # Root canals: +15 min per additional tooth, +20 min per additional canal
+            time_adjustments['assistant_time'] += (num_teeth - 1) * 3
+            time_adjustments['doctor_time'] += (num_teeth - 1) * 12
+            time_adjustments['assistant_time'] += (num_surfaces - 1) * 4  # surfaces = canals for root canals
+            time_adjustments['doctor_time'] += (num_surfaces - 1) * 16
+            time_adjustments['total_time'] += (num_teeth - 1) * 15 + (num_surfaces - 1) * 20
+            
+        elif 'extraction' in original_procedure.lower():
+            # Extractions: +15 min per additional tooth (3 assistant + 12 doctor)
+            time_adjustments['assistant_time'] += (num_teeth - 1) * 3
+            time_adjustments['doctor_time'] += (num_teeth - 1) * 12
+            time_adjustments['total_time'] += (num_teeth - 1) * 15
+            
+        elif 'implant' in original_procedure.lower():
+            # Implants: +30 min per additional tooth
+            time_adjustments['assistant_time'] += (num_teeth - 1) * 6
+            time_adjustments['doctor_time'] += (num_teeth - 1) * 24
+            time_adjustments['total_time'] += (num_teeth - 1) * 30
         
-        if 'crown' in procedure_lower and 'delivery' not in procedure_lower:
-            # CROWN FORMULA (D2): =IF(OR(E2=0, E2=1), 90, 80 + (10*E2))
-            if num_teeth <= 1:
-                total_time = 90
-            else:
-                total_time = 80 + (10 * num_teeth)
-            
-            result['total_time'] = total_time
-            result['assistant_time'] = total_time * 0.11  # Based on your data: 10/90 = 11%
-            result['doctor_time'] = total_time * 0.89     # Based on your data: 80/90 = 89%
-            result['is_absolute_override'] = True
-            
-        elif 'filling' in procedure_lower:
-            # FILLING FORMULA (D3): Complex formula based on surfaces and quadrants
-            if num_surfaces <= 1:
-                total_time = 30
-            elif num_quadrants < 1:
-                total_time = (3 + 0.5 * num_surfaces) * 10
-            else:
-                total_time = (3 + 0.5 * num_surfaces + (num_quadrants - 1)) * 10
-                
-            result['total_time'] = total_time
-            result['assistant_time'] = total_time * 0.33  # Based on your data: 10/30 = 33%
-            result['doctor_time'] = total_time * 0.67     # Based on your data: 20/30 = 67%
-            result['is_absolute_override'] = True
-            
-        elif 'bridge' in procedure_lower:
-            # BRIDGE FORMULA (D4): =IF(OR(E2=0, E2=1), 90, 90 + ((E2-1)*30))
-            if num_teeth <= 1:
-                total_time = 90
-            else:
-                total_time = 90 + ((num_teeth - 1) * 30)
-                
-            result['total_time'] = total_time
-            result['assistant_time'] = total_time * 0.25  # Estimate: bridges are doctor-heavy
-            result['doctor_time'] = total_time * 0.75
-            result['is_absolute_override'] = True
-            
-        elif 'extraction' in procedure_lower:
-            # EXTRACTION FORMULA (D10): Complex formula
-            if num_teeth <= 1:
-                total_time = 50
-            elif num_teeth == 2 and num_quadrants <= 1:
-                total_time = 55
-            elif num_teeth == 2 and num_quadrants == 2:
-                total_time = 60
-            elif num_teeth >= 3 and num_quadrants <= 1:
-                total_time = 45 + (5 * num_teeth)
-            elif num_teeth >= 3 and num_quadrants >= 2:
-                total_time = 45 + (5 * num_teeth) + (5 * num_quadrants)
-            else:
-                total_time = 50  # fallback
-                
-            result['total_time'] = total_time
-            result['assistant_time'] = total_time * 0.2   # Based on your data: 10/50 = 20%
-            result['doctor_time'] = total_time * 0.8      # Based on your data: 40/50 = 80%
-            result['is_absolute_override'] = True
-            
-        elif 'root canal' in procedure_lower:
-            # ROOT CANAL FORMULA (D8): =IF(OR(F2=0, F2=1), 60, 60 + (F2-1)*10)
-            if num_surfaces <= 1:
-                total_time = 60
-            else:
-                total_time = 60 + ((num_surfaces - 1) * 10)
-                
-            result['total_time'] = total_time
-            result['assistant_time'] = total_time * 0.17  # Root canals are very doctor-heavy
-            result['doctor_time'] = total_time * 0.83
-            result['is_absolute_override'] = True
-            
-        elif 'implant' in procedure_lower and 'crown' not in procedure_lower:
-            # IMPLANT FORMULA (D9): =IF(OR(E2=0, E2=1), 70, 70 + (E2-1)*20)
-            if num_teeth <= 1:
-                total_time = 70
-            else:
-                total_time = 70 + ((num_teeth - 1) * 20)
-                
-            result['total_time'] = total_time
-            result['assistant_time'] = total_time * 0.33  # Based on your data: 30/90 ≈ 33%
-            result['doctor_time'] = total_time * 0.67     # Based on your data: 60/90 ≈ 67%
-            result['is_absolute_override'] = True
+        # Quadrant adjustment: 30% increase per additional quadrant
+        if num_quadrants > 1:
+            quadrant_multiplier = 1 + (num_quadrants - 1) * 0.3
+            time_adjustments['assistant_time'] *= quadrant_multiplier
+            time_adjustments['doctor_time'] *= quadrant_multiplier
+            time_adjustments['total_time'] *= quadrant_multiplier
         
-        # For other procedures, return no adjustments (use base times from Excel data)
-        return result
+        return time_adjustments
     
     def round_to_nearest_10(self, minutes: float) -> int:
-        """Round time to nearest 10 minutes using Excel MROUND behavior (always rounds .5 up)"""
-        # Excel MROUND behavior - always rounds .5 away from zero (up for positive numbers)
-        return int((minutes + 5) // 10 * 10)
+        """Round time to the nearest multiple of 10 minutes"""
+        return int(round(minutes / 10) * 10)
     
     def calculate_appointment_time(self, procedures: List[Dict], provider: str, 
                                  mitigating_factors: List[str] = None) -> Dict[str, Any]:
         """Calculate total appointment time for multiple procedures"""
-        if mitigating_factors is None:
-            mitigating_factors = []
+        if not procedures:
+            return {'success': False, 'error': 'No procedures specified'}
+        
+        if not provider:
+            return {'success': False, 'error': 'No provider specified'}
         
         total_assistant_time = 0
         total_doctor_time = 0
         total_base_time = 0
+        
         procedure_details = []
         
-        # Calculate time for each procedure
-        for idx, proc_data in enumerate(procedures):
-            procedure = proc_data['procedure']
-            num_teeth = proc_data.get('num_teeth', 1)
-            num_surfaces = proc_data.get('num_surfaces', 1)
-            num_quadrants = proc_data.get('num_quadrants', 1)
+        for i, proc_data in enumerate(procedures):
+            procedure = proc_data.get('procedure', '')
+            num_teeth = int(proc_data.get('num_teeth', 1))
+            num_surfaces = int(proc_data.get('num_surfaces', 1))
+            num_quadrants = int(proc_data.get('num_quadrants', 1))
+            
+            if not procedure:
+                continue
             
             # Get base times
             base_times = self.get_procedure_base_times(procedure)
+            if base_times['total_time'] == 0:
+                continue
             
-            if not base_times:
-                # For multiple procedures, allow procedures even if provider can't do them
-                # but use default times and add a warning
-                base_times = {'assistant_time': 15, 'doctor_time': 30, 'total_time': 45}
-                warning_added = True
-            else:
-                warning_added = False
+            # Calculate teeth/surfaces adjustments
+            teeth_adjustments = self.calculate_teeth_surfaces_time(
+                procedure, num_teeth, num_surfaces, num_quadrants
+            )
             
-            # For multiple procedures, don't enforce provider compatibility
-            # Just calculate the time and let the user know if there's an issue
-            can_perform = self.check_provider_performs_procedure(procedure, provider)
+            # Calculate individual procedure time
+            proc_assistant_time = base_times['assistant_time'] + teeth_adjustments['assistant_time']
+            proc_doctor_time = base_times['doctor_time'] + teeth_adjustments['doctor_time']
+            proc_total_time = proc_assistant_time + proc_doctor_time
             
-            # Calculate teeth/surfaces/canals adjustments
-            teeth_adjustments = self.calculate_teeth_surfaces_time(procedure, num_teeth, num_surfaces, num_quadrants)
+            # Apply 30% reduction for 2nd+ procedures
+            if i > 0:  # Second procedure and beyond
+                reduction_factor = 0.7  # 30% reduction
+                proc_assistant_time *= reduction_factor
+                proc_doctor_time *= reduction_factor
+                proc_total_time *= reduction_factor
             
-            # Calculate procedure time - handle absolute overrides from Excel formulas
-            if teeth_adjustments.get('is_absolute_override', False):
-                # Use absolute times from Excel formulas
-                proc_assistant_time = teeth_adjustments['assistant_time']
-                proc_doctor_time = teeth_adjustments['doctor_time']
-                proc_total_time = teeth_adjustments['total_time']
-            else:
-                # Use base times + adjustments (traditional approach)
-                proc_assistant_time = base_times['assistant_time'] + teeth_adjustments['assistant_time']
-                proc_doctor_time = base_times['doctor_time'] + teeth_adjustments['doctor_time']
-                proc_total_time = base_times['total_time'] + teeth_adjustments['total_time']
+            # Round to nearest 10 minutes
+            proc_assistant_time = self.round_to_nearest_10(proc_assistant_time)
+            proc_doctor_time = self.round_to_nearest_10(proc_doctor_time)
+            proc_total_time = self.round_to_nearest_10(proc_total_time)
             
-            # Apply 30% reduction for 2nd+ procedures and round to nearest 10
-            is_first_procedure = (idx == 0)
-            if not is_first_procedure:
-                # Reduce by 30% and round to nearest 10
-                reduced_total = proc_total_time * 0.7
-                reduced_total_rounded = self.round_to_nearest_10(reduced_total)
-                
-                # Maintain the assistant/doctor ratio for the reduced time
-                if proc_total_time > 0:
-                    assistant_ratio = proc_assistant_time / proc_total_time
-                    doctor_ratio = proc_doctor_time / proc_total_time
-                    
-                    proc_assistant_time = reduced_total_rounded * assistant_ratio
-                    proc_doctor_time = reduced_total_rounded * doctor_ratio
-                    proc_total_time = reduced_total_rounded
-            
-            # Add to totals
             total_assistant_time += proc_assistant_time
             total_doctor_time += proc_doctor_time
             total_base_time += proc_total_time
@@ -317,73 +270,57 @@ class ProcedureDataLoader:
                 'num_quadrants': num_quadrants,
                 'base_times': base_times,
                 'teeth_adjustments': teeth_adjustments,
-                'procedure_times': {
+                'individual_times': {
                     'assistant_time': proc_assistant_time,
                     'doctor_time': proc_doctor_time,
                     'total_time': proc_total_time
                 },
-                'is_first_procedure': is_first_procedure,
-                'provider_can_perform': can_perform,
-                'time_reduced': not is_first_procedure
+                'is_reduced': i > 0
             })
         
-        # Apply mitigating factors to total time only
+        # Apply mitigating factors to total time
         total_multiplier = 1.0
-        additional_time = 0.0
-        applied_factors = []
+        additional_time = 0
         
-        all_factors = self.get_mitigating_factors()
-        factor_lookup = {f['name']: f['multiplier'] for f in all_factors}
-        
-        for factor_name in mitigating_factors:
-            if factor_name in factor_lookup:
-                multiplier = factor_lookup[factor_name]
-                applied_factors.append({
-                    'name': factor_name,
-                    'multiplier': multiplier
-                })
-                
-                # If multiplier > 2, treat as additional minutes
-                # If multiplier <= 2, treat as a multiplier
-                if multiplier > 2:
-                    additional_time += multiplier
-                else:
-                    total_multiplier *= multiplier
+        if mitigating_factors:
+            for factor_name in mitigating_factors:
+                factors = self.get_mitigating_factors()
+                for factor in factors:
+                    if factor['name'] == factor_name:
+                        if factor['is_multiplier']:
+                            total_multiplier *= factor['multiplier']
+                        else:
+                            additional_time += factor['additional_time']
         
         # Calculate final times
-        final_assistant_time = total_assistant_time * total_multiplier
-        final_doctor_time = total_doctor_time * total_multiplier
-        final_total_time = (total_base_time * total_multiplier) + additional_time
-        
-        # Round to nearest 10 minutes
-        final_assistant_time = self.round_to_nearest_10(final_assistant_time)
-        final_doctor_time = self.round_to_nearest_10(final_doctor_time)
-        final_total_time = self.round_to_nearest_10(final_total_time)
+        final_assistant_time = self.round_to_nearest_10(total_assistant_time * total_multiplier)
+        final_doctor_time = self.round_to_nearest_10(total_doctor_time * total_multiplier)
+        final_total_time = self.round_to_nearest_10((total_base_time * total_multiplier) + additional_time)
         
         return {
             'success': True,
-            'procedures': procedure_details,
             'provider': provider,
+            'procedures': procedure_details,
             'base_times': {
-                'assistant_time': self.round_to_nearest_10(total_assistant_time),
-                'doctor_time': self.round_to_nearest_10(total_doctor_time),
-                'total_time': self.round_to_nearest_10(total_base_time)
+                'assistant_time': total_assistant_time,
+                'doctor_time': total_doctor_time,
+                'total_time': total_base_time
             },
             'final_times': {
                 'assistant_time': final_assistant_time,
                 'doctor_time': final_doctor_time,
                 'total_time': final_total_time
             },
-            'applied_factors': applied_factors,
-            'total_multiplier': round(total_multiplier, 2),
-            'additional_time': int(round(additional_time))
+            'mitigating_factors': {
+                'multiplier': total_multiplier,
+                'additional_time': additional_time
+            }
         }
     
-    # Backward compatibility method for single procedure
     def calculate_single_appointment_time(self, procedure: str, provider: str, 
-                                        mitigating_factors: List[str] = None,
                                         num_teeth: int = 1, num_surfaces: int = 1, 
-                                        num_quadrants: int = 1) -> Dict[str, Any]:
+                                        num_quadrants: int = 1, 
+                                        mitigating_factors: List[str] = None) -> Dict[str, Any]:
         """Calculate appointment time for a single procedure (backward compatibility)"""
         procedures = [{
             'procedure': procedure,
@@ -392,15 +329,4 @@ class ProcedureDataLoader:
             'num_quadrants': num_quadrants
         }]
         
-        result = self.calculate_appointment_time(procedures, provider, mitigating_factors)
-        
-        # Add single procedure fields for backward compatibility
-        if result['success'] and len(result['procedures']) > 0:
-            proc = result['procedures'][0]
-            result['procedure'] = proc['procedure']
-            result['num_teeth'] = proc['num_teeth']
-            result['num_surfaces'] = proc['num_surfaces']
-            result['num_quadrants'] = proc['num_quadrants']
-            result['teeth_adjustments'] = proc['teeth_adjustments']
-        
-        return result
+        return self.calculate_appointment_time(procedures, provider, mitigating_factors)

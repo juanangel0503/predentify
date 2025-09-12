@@ -21,6 +21,12 @@
                         </h1>
                         <p class="mb-0 opacity-75">Appointment Time Estimator</p>
                     </div>
+                    <div class="col-auto">
+                        <a href="/preauth" class="btn btn-light">
+                            <i class="fas fa-file-medical me-2"></i>
+                            Pre-Authorization Generator
+                        </a>
+                    </div>
                 </div>
             </div>
         </header>
@@ -38,20 +44,6 @@
                         </div>
                         <div class="card-body">
                             <form id="estimationForm">
-                                <!-- Procedure Selection -->
-                                <div class="mb-3">
-                                    <label for="procedure" class="form-label">
-                                        <i class="fas fa-procedures me-1"></i>
-                                        Procedure *
-                                    </label>
-                                    <select class="form-select" id="procedure" name="procedure" required>
-                                        <option value="">Select a procedure...</option>
-                                        {% for procedure in procedures %}
-                                        <option value="{{ procedure }}">{{ procedure }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-
                                 <!-- Provider Selection -->
                                 <div class="mb-3">
                                     <label for="provider" class="form-label">
@@ -64,6 +56,60 @@
                                         <option value="{{ provider }}">{{ provider }}</option>
                                         {% endfor %}
                                     </select>
+                                </div>
+
+                                <!-- Procedures Section -->
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        <i class="fas fa-procedures me-1"></i>
+                                        Procedures *
+                                    </label>
+                                    <div id="proceduresContainer">
+                                        <!-- First procedure -->
+                                        <div class="procedure-item border rounded p-3 mb-3">
+                                            <div class="row align-items-end">
+                                                <div class="col-md-4">
+                                                    <label class="form-label small">Procedure</label>
+                                                    <select class="form-select procedure-select" name="procedures[0][procedure]" required>
+                                                        <option value="">Select procedure...</option>
+                                                        {% for procedure in procedures %}
+                                                        <option value="{{ procedure }}">{{ procedure }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label small">Teeth</label>
+                                                    <input type="number" class="form-control" name="procedures[0][num_teeth]" 
+                                                           value="1" min="1" max="32" placeholder="1">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label small">Quadrants</label>
+                                                    <input type="number" class="form-control" name="procedures[0][num_quadrants]" 
+                                                           value="1" min="1" max="4" placeholder="1">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label small">Surfaces/Canals</label>
+                                                    <input type="number" class="form-control" name="procedures[0][num_surfaces]" 
+                                                           value="1" min="1" max="10" placeholder="1">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <button type="button" class="btn btn-outline-danger btn-sm remove-procedure" style="display: none;">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <button type="button" class="btn btn-outline-primary btn-sm" id="addProcedure">
+                                        <i class="fas fa-plus me-1"></i>
+                                        Add Another Procedure
+                                    </button>
+                                    
+                                    <small class="text-muted d-block mt-2">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        For fillings: surfaces per tooth. For root canals: number of canals. For multi-tooth procedures: number of teeth.
+                                    </small>
                                 </div>
 
                                 <!-- Mitigating Factors -->
@@ -113,7 +159,7 @@
                             <div id="results" class="text-center">
                                 <div class="text-muted">
                                     <i class="fas fa-info-circle fa-3x mb-3"></i>
-                                    <p>Select a procedure and provider to see estimated appointment time.</p>
+                                    <p>Select a provider and procedure to see estimated appointment time.</p>
                                 </div>
                             </div>
                         </div>
@@ -141,4 +187,4 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
-</html> 
+</html>

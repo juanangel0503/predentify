@@ -48,142 +48,112 @@
                                 <div class="mb-3">
                                     <label for="provider" class="form-label">
                                         <i class="fas fa-user-md me-1"></i>
-                                        Provider column *
+                                        Provider column
                                     </label>
                                     <select class="form-select" id="provider" name="provider" required>
                                         <option value="">Select a provider...</option>
-                                        {% for provider in providers %}
-                                        <option value="{{ provider }}">{{ provider }}</option>
-                                        {% endfor %}
                                     </select>
                                 </div>
 
-                                <!-- Procedures Section -->
-                                <div class="mb-3">
-                                    <label class="form-label">
-                                        <i class="fas fa-procedures me-1"></i>
-                                        Procedures *
-                                    </label>
-                                    <div id="proceduresContainer">
-                                        <!-- First procedure -->
-                                        <div class="procedure-item border rounded p-3 mb-3">
-                                            <div class="row align-items-end">
-                                                <div class="col-md-4">
-                                                    <label class="form-label small">Procedure</label>
-                                                    <select class="form-select procedure-select" name="procedures[0][procedure]" required>
-                                                        <option value="">Select procedure...</option>
-                                                        {% for procedure in procedures %}
-                                                        <option value="{{ procedure }}">{{ procedure }}</option>
-                                                        {% endfor %}
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-2" id="teethField-0">
-                                                    <label class="form-label small">Teeth</label>
-                                                    <input type="number" class="form-control teeth-input" name="procedures[0][num_teeth]" 
-                                                           value="1" min="1" max="32" placeholder="1" data-index="0">
-                                                </div>
-                                                <div class="col-md-2" id="quadrantsField-0">
-                                                    <label class="form-label small">Quadrants</label>
-                                                    <input type="number" class="form-control" name="procedures[0][num_quadrants]" 
-                                                           value="1" min="1" max="4" placeholder="1" id="quadrantsInput-0">
-                                                </div>
-                                                <div class="col-md-2" id="surfacesCanalsField-0">
-                                                    <label class="form-label small" id="surfacesCanalsLabel-0">Surfaces/Canals</label>
-                                                    <input type="number" class="form-control" name="procedures[0][num_surfaces]" 
-                                                           value="1" min="1" max="10" placeholder="1" id="surfacesCanalsInput-0">
-                                                </div>
-                                                <div class="col-md-2">
-                                                    <button type="button" class="btn btn-outline-danger btn-sm remove-procedure" style="display: none;">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                </div>
-                                            </div>
+                                <!-- Procedures Container -->
+                                <div id="proceduresContainer">
+                                    <!-- First Procedure -->
+                                    <div class="procedure-item border rounded p-3 mb-3" data-procedure-index="0">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <h6 class="mb-0">Procedure 1</h6>
+                                            <button type="button" class="btn btn-sm btn-outline-danger remove-procedure" style="display: none;">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                        
+                                        <!-- Procedure Selection -->
+                                        <div class="mb-3">
+                                            <label class="form-label">Procedure</label>
+                                            <select class="form-select procedure-select" name="procedures[0][procedure]" required>
+                                                <option value="">Select a procedure...</option>
+                                            </select>
+                                        </div>
+
+                                        <!-- Number of Teeth -->
+                                        <div class="mb-3">
+                                            <label class="form-label">Number of Teeth</label>
+                                            <input type="number" class="form-control" name="procedures[0][num_teeth]" 
+                                                   value="1" min="1" max="32" required>
+                                        </div>
+
+                                        <!-- Quadrants (only show if more than 1 tooth) -->
+                                        <div class="mb-3" id="quadrants-0" style="display: none;">
+                                            <label class="form-label">Number of Quadrants</label>
+                                            <input type="number" class="form-control" name="procedures[0][num_quadrants]" 
+                                                   value="1" min="1" max="4">
+                                        </div>
+
+                                        <!-- Surfaces (only show for fillings) -->
+                                        <div class="mb-3" id="surfaces-0" style="display: none;">
+                                            <label class="form-label">Number of Surfaces</label>
+                                            <input type="number" class="form-control" name="procedures[0][num_surfaces]" 
+                                                   value="1" min="1" max="5">
+                                        </div>
+
+                                        <!-- Canals (only show for root canals) -->
+                                        <div class="mb-3" id="canals-0" style="display: none;">
+                                            <label class="form-label">Number of Canals</label>
+                                            <input type="number" class="form-control" name="procedures[0][num_surfaces]" 
+                                                   value="1" min="1" max="4">
                                         </div>
                                     </div>
-                                    
-                                    <button type="button" class="btn btn-outline-primary btn-sm" id="addProcedure">
-                                        <i class="fas fa-plus me-1"></i>
+                                </div>
+
+                                <!-- Add Another Procedure Button -->
+                                <div class="mb-3">
+                                    <button type="button" class="btn btn-outline-primary" id="addProcedure">
+                                        <i class="fas fa-plus me-2"></i>
                                         Add Another Procedure
                                     </button>
-                                    
-                                    <small class="text-muted d-block mt-2">
-                                        <i class="fas fa-info-circle me-1"></i>
-                                        For fillings: surfaces per tooth. For root canals: number of canals. For multi-tooth procedures: number of teeth.
-                                    </small>
                                 </div>
 
                                 <!-- Mitigating Factors -->
                                 <div class="mb-3">
                                     <label class="form-label">
                                         <i class="fas fa-exclamation-triangle me-1"></i>
-                                        Mitigating Factors (Optional)
+                                        Mitigating Factors
                                     </label>
-                                    <div class="mitigating-factors">
-                                        {% for factor in mitigating_factors %}
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" 
-                                                   id="factor_{{ loop.index }}" 
-                                                   name="mitigating_factors" 
-                                                   value="{{ factor.name }}">
-                                            <label class="form-check-label" for="factor_{{ loop.index }}">
-                                                {{ factor.name }}
-                                                <small class="text-muted">
-                                                    ({% if factor.multiplier > 2 %}+{{ factor.multiplier }} min{% else %}{{ factor.multiplier }}x{% endif %})
-                                                </small>
-                                            </label>
-                                        </div>
-                                        {% endfor %}
+                                    <div id="mitigatingFactors">
+                                        <!-- Mitigating factors will be loaded here -->
                                     </div>
                                 </div>
 
                                 <!-- Submit Button -->
                                 <button type="submit" class="btn btn-primary btn-lg w-100">
                                     <i class="fas fa-calculator me-2"></i>
-                                    Calculate Time
+                                    Calculate Appointment Time
                                 </button>
                             </form>
                         </div>
                     </div>
                 </div>
 
-                <!-- Results Panel -->
+                <!-- Results -->
                 <div class="col-lg-6">
                     <div class="card shadow-sm">
-                        <div class="card-header bg-success text-white">
+                        <div class="card-header bg-light">
                             <h5 class="mb-0">
                                 <i class="fas fa-clock me-2"></i>
-                                Estimated Time
+                                Estimated Times
                             </h5>
                         </div>
                         <div class="card-body">
-                            <div id="results" class="text-center">
-                                <div class="text-muted">
-                                    <i class="fas fa-info-circle fa-3x mb-3"></i>
-                                    <p>Select a provider and procedure to see estimated appointment time.</p>
-                                </div>
+                            <div id="results" class="text-center text-muted">
+                                <i class="fas fa-calculator fa-3x mb-3"></i>
+                                <p>Enter procedure details and click "Calculate" to see estimated times.</p>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Provider Compatibility Alert -->
-                    <div id="providerAlert" class="alert alert-warning mt-3" style="display: none;">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        <strong>Note:</strong> This provider may not typically perform this procedure.
-                    </div>
                 </div>
-            </div>
-
-            <!-- Loading Spinner -->
-            <div id="loadingSpinner" class="text-center mt-4" style="display: none;">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <p class="mt-2">Calculating appointment time...</p>
             </div>
         </div>
     </div>
 
-    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
