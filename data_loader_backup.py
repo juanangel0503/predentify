@@ -8,14 +8,12 @@ class ProcedureDataLoader:
     def __init__(self, excel_path: str):
         self.excel_path = excel_path
         self.df = None
-        self.duration_df = None
         self.load_data()
     
     def load_data(self):
         """Load data from Excel file"""
         try:
             self.df = pd.read_excel(self.excel_path, sheet_name='Metadata2')
-            self.duration_df = pd.read_excel(self.excel_path, sheet_name='Duration')
             print(f"Loaded {len(self.df)} procedures from {self.excel_path}")
         except Exception as e:
             print(f"Error loading Excel file: {e}")
@@ -101,65 +99,8 @@ class ProcedureDataLoader:
         performs = procedure_row.iloc[0].get(provider, 0)
         return bool(performs) if pd.notna(performs) else False
     
-    def calculate_teeth_surfaces_time(self, procedure: str, num_teeth: int = 1, 
-                                    num_surfaces: int = 1, num_quadrants: int = 1) -> Dict[str, float]:
-        """Calculate additional time based on number of teeth, surfaces, and quadrants"""
-        # Base multipliers for different procedure types
-        time_adjustments = {
-            'assistant_time': 0,
-            'doctor_time': 0,
-            'total_time': 0
-        }
-        
-        # Procedure-specific time calculations
-        if 'filling' in procedure.lower():
-            # Fillings: +5 min per additional tooth, +3 min per additional surface
-            time_adjustments['assistant_time'] += (num_teeth - 1) * 3
-            time_adjustments['doctor_time'] += (num_teeth - 1) * 5
-            time_adjustments['total_time'] += (num_teeth - 1) * 8
-            
-            if num_surfaces > 1:
-                time_adjustments['assistant_time'] += (num_surfaces - 1) * 2
-                time_adjustments['doctor_time'] += (num_surfaces - 1) * 3
-                time_adjustments['total_time'] += (num_surfaces - 1) * 5
-                
-        elif 'crown' in procedure.lower():
-            # Crowns: +10 min per additional tooth
-            time_adjustments['assistant_time'] += (num_teeth - 1) * 5
-            time_adjustments['doctor_time'] += (num_teeth - 1) * 10
-            time_adjustments['total_time'] += (num_teeth - 1) * 15
-            
-        elif 'root canal' in procedure.lower():
-            # Root canals: +15 min per additional canal
-            time_adjustments['assistant_time'] += (num_surfaces - 1) * 5  # surfaces = canals in this context
-            time_adjustments['doctor_time'] += (num_surfaces - 1) * 15
-            time_adjustments['total_time'] += (num_surfaces - 1) * 20
-            
-        elif 'extraction' in procedure.lower():
-            # Extractions: +8 min per additional tooth
-            time_adjustments['assistant_time'] += (num_teeth - 1) * 3
-            time_adjustments['doctor_time'] += (num_teeth - 1) * 8
-            time_adjustments['total_time'] += (num_teeth - 1) * 11
-            
-        elif 'implant' in procedure.lower():
-            # Implants: +20 min per additional implant
-            time_adjustments['assistant_time'] += (num_teeth - 1) * 10
-            time_adjustments['doctor_time'] += (num_teeth - 1) * 20
-            time_adjustments['total_time'] += (num_teeth - 1) * 30
-            
-        # Quadrant-based adjustments (for procedures that span multiple quadrants)
-        if num_quadrants > 1:
-            quadrant_multiplier = 1 + (num_quadrants - 1) * 0.2  # 20% increase per additional quadrant
-            time_adjustments['assistant_time'] *= quadrant_multiplier
-            time_adjustments['doctor_time'] *= quadrant_multiplier
-            time_adjustments['total_time'] *= quadrant_multiplier
-        
-        return time_adjustments
-    
     def calculate_appointment_time(self, procedure: str, provider: str, 
-                                 mitigating_factors: List[str] = None,
-                                 num_teeth: int = 1, num_surfaces: int = 1, 
-                                 num_quadrants: int = 1) -> Dict[str, Any]:
+                                 mitigating_factors: List[str] = None) -> Dict[str, Any]:
         """Calculate total appointment time with all factors"""
         if mitigating_factors is None:
             mitigating_factors = []
@@ -187,14 +128,6 @@ class ProcedureDataLoader:
         assistant_time = base_times['assistant_time']
         doctor_time = base_times['doctor_time']
         total_base_time = base_times['total_time']
-        
-        # Calculate teeth/surfaces/canals adjustments
-        teeth_adjustments = self.calculate_teeth_surfaces_time(procedure, num_teeth, num_surfaces, num_quadrants)
-        
-        # Apply teeth/surfaces adjustments
-        assistant_time += teeth_adjustments['assistant_time']
-        doctor_time += teeth_adjustments['doctor_time']
-        total_base_time += teeth_adjustments['total_time']
         
         # Apply mitigating factors
         total_multiplier = 1.0
@@ -228,15 +161,11 @@ class ProcedureDataLoader:
             'success': True,
             'procedure': procedure,
             'provider': provider,
-            'num_teeth': num_teeth,
-            'num_surfaces': num_surfaces,
-            'num_quadrants': num_quadrants,
             'base_times': {
-                'assistant_time': base_times['assistant_time'],
-                'doctor_time': base_times['doctor_time'],
-                'total_time': base_times['total_time']
+                'assistant_time': assistant_time,
+                'doctor_time': doctor_time,
+                'total_time': total_base_time
             },
-            'teeth_adjustments': teeth_adjustments,
             'final_times': {
                 'assistant_time': round(final_assistant_time, 1),
                 'doctor_time': round(final_doctor_time, 1),
@@ -245,4 +174,4 @@ class ProcedureDataLoader:
             'applied_factors': applied_factors,
             'total_multiplier': round(total_multiplier, 2),
             'additional_time': round(additional_time, 1)
-        }
+        } 

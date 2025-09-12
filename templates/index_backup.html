@@ -66,35 +66,6 @@
                                     </select>
                                 </div>
 
-                                <!-- Teeth/Surfaces/Canals Section -->
-                                <div class="mb-3">
-                                    <label class="form-label">
-                                        <i class="fas fa-calculator me-1"></i>
-                                        Procedure Details
-                                    </label>
-                                    <div class="row">
-                                        <div class="col-md-4">
-                                            <label for="num_teeth" class="form-label small">Number of Teeth</label>
-                                            <input type="number" class="form-control" id="num_teeth" name="num_teeth" 
-                                                   value="1" min="1" max="32" placeholder="1">
-                                        </div>
-                                        <div class="col-md-4">
-                                            <label for="num_surfaces" class="form-label small">Surfaces/Canals</label>
-                                            <input type="number" class="form-control" id="num_surfaces" name="num_surfaces" 
-                                                   value="1" min="1" max="10" placeholder="1">
-                                        </div>
-                                        <div class="col-md-4">
-                                            <label for="num_quadrants" class="form-label small">Quadrants</label>
-                                            <input type="number" class="form-control" id="num_quadrants" name="num_quadrants" 
-                                                   value="1" min="1" max="4" placeholder="1">
-                                        </div>
-                                    </div>
-                                    <small class="text-muted">
-                                        <i class="fas fa-info-circle me-1"></i>
-                                        For fillings: surfaces per tooth. For root canals: number of canals. For multi-tooth procedures: number of teeth.
-                                    </small>
-                                </div>
-
                                 <!-- Mitigating Factors -->
                                 <div class="mb-3">
                                     <label class="form-label">
@@ -170,4 +141,4 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
-</html>
+</html> 

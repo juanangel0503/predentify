@@ -23,11 +23,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const procedure = formData.get('procedure');
             const provider = formData.get('provider');
             const mitigatingFactors = formData.getAll('mitigating_factors');
-            
-            // Get teeth/surfaces/canals data
-            const numTeeth = parseInt(formData.get('num_teeth')) || 1;
-            const numSurfaces = parseInt(formData.get('num_surfaces')) || 1;
-            const numQuadrants = parseInt(formData.get('num_quadrants')) || 1;
 
             // Validate required fields
             if (!procedure || !provider) {
@@ -38,10 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const requestData = {
                 procedure: procedure,
                 provider: provider,
-                mitigating_factors: mitigatingFactors,
-                num_teeth: numTeeth,
-                num_surfaces: numSurfaces,
-                num_quadrants: numQuadrants
+                mitigating_factors: mitigatingFactors
             };
 
             // Make API call
@@ -78,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        const { procedure, provider, base_times, final_times, applied_factors, teeth_adjustments, num_teeth, num_surfaces, num_quadrants } = data;
+        const { procedure, provider, base_times, final_times, applied_factors } = data;
 
         let html = `
             <div class="fade-in">
@@ -86,14 +78,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     <i class="fas fa-check-circle me-2"></i>
                     ${procedure} - ${provider}
                 </h6>
-                
-                <div class="mb-2">
-                    <small class="text-muted">
-                        <strong>Details:</strong> ${num_teeth} tooth${num_teeth > 1 ? 's' : ''}, 
-                        ${num_surfaces} surface${num_surfaces > 1 ? 's' : ''}/canal${num_surfaces > 1 ? 's' : ''}, 
-                        ${num_quadrants} quadrant${num_quadrants > 1 ? 's' : ''}
-                    </small>
-                </div>
                 
                 <div class="time-breakdown success-state">
                     <div class="time-item">
@@ -123,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
 
         // Show base times if different from final times
-        if (hasAppliedFactors(base_times, final_times) || hasTeethAdjustments(teeth_adjustments)) {
+        if (hasAppliedFactors(base_times, final_times)) {
             html += `
                 <div class="mt-3">
                     <small class="text-muted">
@@ -136,32 +120,10 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         }
 
-        // Show teeth/surfaces adjustments
-        if (hasTeethAdjustments(teeth_adjustments)) {
-            html += `
-                <div class="applied-factors mt-3">
-                    <h6 class="mb-2">
-                        <i class="fas fa-calculator text-info me-2"></i>
-                        Teeth/Surfaces Adjustments
-                    </h6>
-            `;
-            
-            if (teeth_adjustments.assistant_time > 0 || teeth_adjustments.doctor_time > 0) {
-                html += `
-                    <div class="factor-item">
-                        <span>Additional time for ${num_teeth} tooth${num_teeth > 1 ? 's' : ''}, ${num_surfaces} surface${num_surfaces > 1 ? 's' : ''}</span>
-                        <span class="text-info fw-bold">+${teeth_adjustments.total_time} min</span>
-                    </div>
-                `;
-            }
-            
-            html += '</div>';
-        }
-
         // Show applied factors
         if (applied_factors && applied_factors.length > 0) {
             html += `
-                <div class="applied-factors mt-3">
+                <div class="applied-factors">
                     <h6 class="mb-2">
                         <i class="fas fa-exclamation-triangle text-warning me-2"></i>
                         Applied Factors
@@ -213,14 +175,6 @@ document.addEventListener('DOMContentLoaded', function() {
                baseTimes.total_time !== finalTimes.total_time;
     }
 
-    function hasTeethAdjustments(teethAdjustments) {
-        return teethAdjustments && (
-            teethAdjustments.assistant_time > 0 || 
-            teethAdjustments.doctor_time > 0 || 
-            teethAdjustments.total_time > 0
-        );
-    }
-
     function showLoading(show) {
         loadingSpinner.style.display = show ? 'block' : 'none';
     }
@@ -236,9 +190,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Auto-calculate when form changes (optional feature)
     const procedureSelect = document.getElementById('procedure');
     const providerSelect = document.getElementById('provider');
-    const numTeethInput = document.getElementById('num_teeth');
-    const numSurfacesInput = document.getElementById('num_surfaces');
-    const numQuadrantsInput = document.getElementById('num_quadrants');
     
     let autoCalculateTimeout;
     
@@ -254,9 +205,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add event listeners for auto-calculation
     procedureSelect.addEventListener('change', scheduleAutoCalculate);
     providerSelect.addEventListener('change', scheduleAutoCalculate);
-    numTeethInput.addEventListener('input', scheduleAutoCalculate);
-    numSurfacesInput.addEventListener('input', scheduleAutoCalculate);
-    numQuadrantsInput.addEventListener('input', scheduleAutoCalculate);
     
     // Add event listeners for checkboxes
     document.querySelectorAll('input[name="mitigating_factors"]').forEach(checkbox => {
@@ -268,4 +216,4 @@ document.addEventListener('DOMContentLoaded', function() {
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
-});
+}); 

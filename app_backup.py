@@ -29,19 +29,11 @@ def estimate_time():
         provider = data.get('provider')
         mitigating_factors = data.get('mitigating_factors', [])
         
-        # Get teeth/surfaces/canals parameters
-        num_teeth = int(data.get('num_teeth', 1))
-        num_surfaces = int(data.get('num_surfaces', 1))
-        num_quadrants = int(data.get('num_quadrants', 1))
-        
         # Get base times
         result = data_loader.calculate_appointment_time(
             procedure=procedure,
             provider=provider,
-            mitigating_factors=mitigating_factors,
-            num_teeth=num_teeth,
-            num_surfaces=num_surfaces,
-            num_quadrants=num_quadrants
+            mitigating_factors=mitigating_factors
         )
         
         return jsonify(result)
@@ -65,4 +57,4 @@ def get_mitigating_factors():
     return jsonify(data_loader.get_mitigating_factors())
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000) 
