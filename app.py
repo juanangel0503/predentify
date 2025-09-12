@@ -56,7 +56,16 @@ def estimate_time():
                 mitigating_factors=mitigating_factors
             )
         
-        return jsonify(result)
+        # Wrap result in success response format expected by frontend
+        return jsonify({
+            'success': True,
+            'procedures': result.get('procedure_details', []),
+            'provider': result.get('provider', provider),
+            'base_times': result.get('base_times', {}),
+            'final_times': result.get('final_times', {}),
+            'applied_factors': result.get('applied_factors', []),
+            'raw_result': result  # Keep original for debugging
+        })
     
     except Exception as e:
         return jsonify({'error': str(e)}), 400

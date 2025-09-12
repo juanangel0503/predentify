@@ -106,7 +106,8 @@
   "Hygiene": [
     "Marina",
     "Monse",
-    "Jessica"
+    "Jessica",
+    "Hygiene"
   ],
   "New Patient Exam": [
     "Miekella",
@@ -117,7 +118,8 @@
     "Jessica",
     "Amber",
     "Kym",
-    "Natalia"
+    "Natalia",
+    "Hygiene"
   ],
   "Post Op Exam": [
     "Marina",
@@ -226,6 +228,9 @@
     "Monse",
     "Jessica"
   ],
+  "Kids Hygiene 8-11": [
+    "Hygiene"
+  ],
   "In Office Whitenings": [
     "Marina",
     "Monse",
@@ -238,6 +243,12 @@
     "Amber",
     "Kym",
     "Natalia"
+  ],
+  "Laser Bacterial Reduction": [
+    "Hygiene"
+  ],
+  "Re-Eval, Pol & FL": [
+    "Hygiene"
   ],
   "Laser Desensitization": [
     "Marina",
