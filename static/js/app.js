@@ -253,15 +253,32 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function calculateAppointmentTime() {
-        const provider = document.getElementById('provider').value;
+        const provider = document.getElementById('provider');
+        if (!provider) {
+            displayError('Provider selection not found.');
+            return;
+        }
+        
+        const providerValue = provider.value;
         const procedures = [];
         
-        // Collect all procedure data
+        // Collect all procedure data with null checks
         document.querySelectorAll('.procedure-item').forEach((item, index) => {
-            const procedure = item.querySelector('.procedure-select').value;
-            const numTeeth = parseInt(item.querySelector('.teeth-input').value) || 1;
-            const numQuadrants = parseInt(item.querySelector('.quadrants-input').value) || 1;
-            const numSurfaces = parseInt(item.querySelector('.surfaces-input').value) || 1;
+            const procedureSelect = item.querySelector('.procedure-select');
+            const teethInput = item.querySelector('.teeth-input');
+            const quadrantsInput = item.querySelector('.quadrants-input');
+            const surfacesInput = item.querySelector('.surfaces-input');
+            
+            // Check if all required elements exist
+            if (!procedureSelect || !teethInput || !quadrantsInput || !surfacesInput) {
+                console.warn('Missing form elements in procedure item', index);
+                return; // Skip this item
+            }
+            
+            const procedure = procedureSelect.value;
+            const numTeeth = parseInt(teethInput.value) || 1;
+            const numQuadrants = parseInt(quadrantsInput.value) || 1;
+            const numSurfaces = parseInt(surfacesInput.value) || 1;
             
             if (procedure) {
                 procedures.push({
@@ -279,7 +296,7 @@ document.addEventListener('DOMContentLoaded', function() {
             mitigatingFactors.push(checkbox.value);
         });
         
-        if (!provider || procedures.length === 0) {
+        if (!providerValue || procedures.length === 0) {
             displayError('Please select a provider and at least one procedure.');
             return;
         }
@@ -292,7 +309,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                provider: provider,
+                provider: providerValue,
                 procedures: procedures,
                 mitigating_factors: mitigatingFactors
             })
