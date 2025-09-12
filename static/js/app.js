@@ -12,6 +12,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let allProcedures = [];
     let allProviders = [];
     let isDataLoaded = false;
+    let autoCalculateTimeout;
+    let isAutoCalculating = false;
 
     // Handle form submission
     form.addEventListener('submit', function(e) {
@@ -71,6 +73,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Update field visibility for new row
         updateFieldVisibility();
+        
+        // Schedule auto-calculation for new row
+        scheduleAutoCalculate();
     }
 
     function getProcedureOptions() {
@@ -95,6 +100,7 @@ document.addEventListener('DOMContentLoaded', function() {
         button.closest('.procedure-item').remove();
         updateRemoveButtons();
         updateFieldVisibility();
+        scheduleAutoCalculate(); // Recalculate after removal
     }
 
     function addProcedureEventListeners() {
@@ -105,20 +111,94 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
-        // Teeth input changes
+        // Teeth input changes - with auto-calculation
         document.querySelectorAll('.teeth-input').forEach(input => {
             input.addEventListener('input', function() {
                 updateFieldVisibility();
+                scheduleAutoCalculate();
             });
         });
 
-        // Procedure selection changes
+        // Quadrants input changes - with auto-calculation
+        document.querySelectorAll('.quadrants-input').forEach(input => {
+            input.addEventListener('input', function() {
+                scheduleAutoCalculate();
+            });
+        });
+
+        // Surfaces input changes - with auto-calculation
+        document.querySelectorAll('.surfaces-input').forEach(input => {
+            input.addEventListener('input', function() {
+                scheduleAutoCalculate();
+            });
+        });
+
+        // Procedure selection changes - with auto-calculation
         document.querySelectorAll('.procedure-select').forEach(select => {
             select.addEventListener('change', function() {
                 updateFieldVisibility();
                 updateProviderOptions();
+                scheduleAutoCalculate();
             });
         });
+    }
+
+    // Enhanced auto-calculation with better feedback and debouncing
+    function scheduleAutoCalculate() {
+        if (!isDataLoaded) {
+            console.log('Data not loaded yet, skipping auto-calculation');
+            return;
+        }
+
+        // Clear existing timeout
+        clearTimeout(autoCalculateTimeout);
+        
+        // Show auto-calculation indicator
+        showAutoCalculationIndicator();
+        
+        // Set new timeout with debouncing
+        autoCalculateTimeout = setTimeout(() => {
+            if (isFormValidForAutoCalculation()) {
+                console.log('🔄 Auto-calculating appointment time...');
+                isAutoCalculating = true;
+                calculateAppointmentTime(true); // true indicates this is an auto-calculation
+            } else {
+                hideAutoCalculationIndicator();
+            }
+        }, 800); // Increased debounce time for better UX
+    }
+
+    function isFormValidForAutoCalculation() {
+        const provider = document.getElementById('provider');
+        const procedureSelects = document.querySelectorAll('.procedure-select');
+        
+        if (!provider || !provider.value) {
+            return false;
+        }
+        
+        // Check if at least one procedure is selected
+        for (let select of procedureSelects) {
+            if (select.value) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    function showAutoCalculationIndicator() {
+        // Add a subtle indicator that auto-calculation is pending
+        const indicator = document.getElementById('autoCalcIndicator');
+        if (indicator) {
+            indicator.style.display = 'block';
+        }
+    }
+
+    function hideAutoCalculationIndicator() {
+        const indicator = document.getElementById('autoCalcIndicator');
+        if (indicator) {
+            indicator.style.display = 'none';
+        }
     }
 
     // Update field visibility based on procedure type and teeth count
@@ -293,8 +373,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function calculateAppointmentTime() {
-        console.log('=== DEBUG: Starting calculateAppointmentTime ===');
+    function calculateAppointmentTime(isAutoCalculation = false) {
+        console.log('=== DEBUG: Starting calculateAppointmentTime ===', { isAutoCalculation });
         
         const provider = document.getElementById('provider');
         if (!provider) {
@@ -369,11 +449,18 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         if (!providerValue || procedures.length === 0) {
-            displayError('Please select a provider and at least one procedure.');
+            if (!isAutoCalculation) {
+                displayError('Please select a provider and at least one procedure.');
+            }
             return;
         }
         
-        showLoading(true);
+        // Show appropriate loading state
+        if (isAutoCalculation) {
+            showAutoCalculationLoading();
+        } else {
+            showLoading(true);
+        }
         
         fetch('/estimate', {
             method: 'POST',
@@ -393,13 +480,41 @@ document.addEventListener('DOMContentLoaded', function() {
             return response.json();
         })
         .then(data => {
-            showLoading(false);
+            if (isAutoCalculation) {
+                hideAutoCalculationLoading();
+                isAutoCalculating = false;
+            } else {
+                showLoading(false);
+            }
             displayResults(data);
         })
         .catch(error => {
-            showLoading(false);
-            displayError('Error calculating appointment time: ' + error.message);
+            if (isAutoCalculation) {
+                hideAutoCalculationLoading();
+                isAutoCalculating = false;
+            } else {
+                showLoading(false);
+            }
+            if (!isAutoCalculation) {
+                displayError('Error calculating appointment time: ' + error.message);
+            }
         });
+    }
+
+    function showAutoCalculationLoading() {
+        // Show a subtle loading indicator for auto-calculation
+        const indicator = document.getElementById('autoCalcIndicator');
+        if (indicator) {
+            indicator.innerHTML = '<i class="fas fa-spinner fa-spin text-primary"></i> Calculating...';
+            indicator.style.display = 'block';
+        }
+    }
+
+    function hideAutoCalculationLoading() {
+        const indicator = document.getElementById('autoCalcIndicator');
+        if (indicator) {
+            indicator.style.display = 'none';
+        }
     }
 
     function displayResults(data) {
@@ -407,7 +522,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.warning) {
                 showProviderAlert();
             }
-            displayError(data.error);
+            if (!isAutoCalculating) {
+                displayError(data.error);
+            }
             return;
         }
 
@@ -548,20 +665,9 @@ document.addEventListener('DOMContentLoaded', function() {
         providerAlert.style.display = 'none';
     }
 
-    // Auto-calculate when form changes
+    // Enhanced auto-calculation event listeners
     const providerSelect = document.getElementById('provider');
     
-    let autoCalculateTimeout;
-    
-    function scheduleAutoCalculate() {
-        clearTimeout(autoCalculateTimeout);
-        autoCalculateTimeout = setTimeout(() => {
-            if (providerSelect && providerSelect.value && document.querySelector('.procedure-select') && document.querySelector('.procedure-select').value) {
-                calculateAppointmentTime();
-            }
-        }, 500);
-    }
-
     // Add event listeners for auto-calculation and bidirectional filtering
     if (providerSelect) {
         providerSelect.addEventListener('change', function() {
