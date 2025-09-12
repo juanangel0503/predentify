@@ -78,6 +78,16 @@ def get_mitigating_factors():
     """API endpoint to get all mitigating factors"""
     return jsonify(data_loader.get_mitigating_factors())
 
+@app.route('/api/provider_procedure_compatibility')
+def get_provider_procedure_compatibility():
+    """API endpoint to get provider -> procedures compatibility"""
+    return jsonify(data_loader.get_provider_procedure_compatibility())
+
+@app.route('/api/procedure_provider_compatibility')
+def get_procedure_provider_compatibility():
+    """API endpoint to get procedure -> providers compatibility"""
+    return jsonify(data_loader.get_procedure_provider_compatibility())
+
 # Pre-Authorization Generator routes
 @app.route('/preauth')
 def preauth_index():

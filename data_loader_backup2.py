@@ -36,34 +36,6 @@ class ProcedureDataLoader:
                     'Jessica', 'Amber', 'Kym', 'Natalia', 'Hygiene']
         return providers
     
-    def get_provider_procedure_compatibility(self) -> Dict[str, List[str]]:
-        """Get provider -> procedures compatibility matrix"""
-        compatibility = {}
-        providers = self.get_providers()
-        procedures = self.get_procedures()
-        
-        for provider in providers:
-            compatibility[provider] = []
-            for procedure in procedures:
-                if self.check_provider_performs_procedure(procedure, provider):
-                    compatibility[provider].append(procedure)
-        
-        return compatibility
-    
-    def get_procedure_provider_compatibility(self) -> Dict[str, List[str]]:
-        """Get procedure -> providers compatibility matrix"""
-        compatibility = {}
-        procedures = self.get_procedures()
-        providers = self.get_providers()
-        
-        for procedure in procedures:
-            compatibility[procedure] = []
-            for provider in providers:
-                if self.check_provider_performs_procedure(procedure, provider):
-                    compatibility[procedure].append(provider)
-        
-        return compatibility
-    
     def get_mitigating_factors(self) -> List[Dict[str, Any]]:
         """Get list of all mitigating factors with their multipliers"""
         if self.df is None:
@@ -168,10 +140,10 @@ class ProcedureDataLoader:
             time_adjustments['total_time'] += (num_surfaces - 1) * 38
             
         elif 'extraction' in procedure.lower():
-            # Extractions: +15 min per additional tooth (3 assistant + 12 doctor)
-            time_adjustments['assistant_time'] += (num_teeth - 1) * 3
-            time_adjustments['doctor_time'] += (num_teeth - 1) * 12
-            time_adjustments['total_time'] += (num_teeth - 1) * 15
+            # Extractions: +20 min per additional tooth
+            time_adjustments['assistant_time'] += (num_teeth - 1) * 5
+            time_adjustments['doctor_time'] += (num_teeth - 1) * 20
+            time_adjustments['total_time'] += (num_teeth - 1) * 25
             
         elif 'implant' in procedure.lower():
             # Implants: +45 min per additional implant
@@ -204,7 +176,7 @@ class ProcedureDataLoader:
         procedure_details = []
         
         # Calculate time for each procedure
-        for idx, proc_data in enumerate(procedures):
+        for proc_data in procedures:
             procedure = proc_data['procedure']
             num_teeth = proc_data.get('num_teeth', 1)
             num_surfaces = proc_data.get('num_surfaces', 1)
@@ -214,16 +186,20 @@ class ProcedureDataLoader:
             base_times = self.get_procedure_base_times(procedure)
             
             if not base_times:
-                # For multiple procedures, allow procedures even if provider can't do them
-                # but use default times and add a warning
-                base_times = {'assistant_time': 15, 'doctor_time': 30, 'total_time': 45}
-                warning_added = True
-            else:
-                warning_added = False
+                return {
+                    'error': f'Procedure "{procedure}" not found',
+                    'success': False
+                }
             
-            # For multiple procedures, don't enforce provider compatibility
-            # Just calculate the time and let the user know if there's an issue
+            # Check if provider can perform this procedure
             can_perform = self.check_provider_performs_procedure(procedure, provider)
+            
+            if not can_perform:
+                return {
+                    'error': f'Provider "{provider}" does not perform "{procedure}"',
+                    'success': False,
+                    'warning': True
+                }
             
             # Calculate teeth/surfaces/canals adjustments
             teeth_adjustments = self.calculate_teeth_surfaces_time(procedure, num_teeth, num_surfaces, num_quadrants)
@@ -232,22 +208,6 @@ class ProcedureDataLoader:
             proc_assistant_time = base_times['assistant_time'] + teeth_adjustments['assistant_time']
             proc_doctor_time = base_times['doctor_time'] + teeth_adjustments['doctor_time']
             proc_total_time = base_times['total_time'] + teeth_adjustments['total_time']
-            
-            # Apply 30% reduction for 2nd+ procedures and round to nearest 10
-            is_first_procedure = (idx == 0)
-            if not is_first_procedure:
-                # Reduce by 30% and round to nearest 10
-                reduced_total = proc_total_time * 0.7
-                reduced_total_rounded = self.round_to_nearest_10(reduced_total)
-                
-                # Maintain the assistant/doctor ratio for the reduced time
-                if proc_total_time > 0:
-                    assistant_ratio = proc_assistant_time / proc_total_time
-                    doctor_ratio = proc_doctor_time / proc_total_time
-                    
-                    proc_assistant_time = reduced_total_rounded * assistant_ratio
-                    proc_doctor_time = reduced_total_rounded * doctor_ratio
-                    proc_total_time = reduced_total_rounded
             
             # Add to totals
             total_assistant_time += proc_assistant_time
@@ -265,10 +225,7 @@ class ProcedureDataLoader:
                     'assistant_time': proc_assistant_time,
                     'doctor_time': proc_doctor_time,
                     'total_time': proc_total_time
-                },
-                'is_first_procedure': is_first_procedure,
-                'provider_can_perform': can_perform,
-                'time_reduced': not is_first_procedure
+                }
             })
         
         # Apply mitigating factors to total time only

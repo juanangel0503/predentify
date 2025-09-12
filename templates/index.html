@@ -48,7 +48,7 @@
                                 <div class="mb-3">
                                     <label for="provider" class="form-label">
                                         <i class="fas fa-user-md me-1"></i>
-                                        Provider *
+                                        Provider column *
                                     </label>
                                     <select class="form-select" id="provider" name="provider" required>
                                         <option value="">Select a provider...</option>
@@ -79,18 +79,18 @@
                                                 </div>
                                                 <div class="col-md-2">
                                                     <label class="form-label small">Teeth</label>
-                                                    <input type="number" class="form-control" name="procedures[0][num_teeth]" 
-                                                           value="1" min="1" max="32" placeholder="1">
+                                                    <input type="number" class="form-control teeth-input" name="procedures[0][num_teeth]" 
+                                                           value="1" min="1" max="32" placeholder="1" data-index="0">
                                                 </div>
-                                                <div class="col-md-2">
+                                                <div class="col-md-2" id="quadrantsField-0">
                                                     <label class="form-label small">Quadrants</label>
                                                     <input type="number" class="form-control" name="procedures[0][num_quadrants]" 
-                                                           value="1" min="1" max="4" placeholder="1">
+                                                           value="1" min="1" max="4" placeholder="1" id="quadrantsInput-0">
                                                 </div>
-                                                <div class="col-md-2">
-                                                    <label class="form-label small">Surfaces/Canals</label>
+                                                <div class="col-md-2" id="surfacesCanalsField-0">
+                                                    <label class="form-label small" id="surfacesCanalsLabel-0">Surfaces/Canals</label>
                                                     <input type="number" class="form-control" name="procedures[0][num_surfaces]" 
-                                                           value="1" min="1" max="10" placeholder="1">
+                                                           value="1" min="1" max="10" placeholder="1" id="surfacesCanalsInput-0">
                                                 </div>
                                                 <div class="col-md-2">
                                                     <button type="button" class="btn btn-outline-danger btn-sm remove-procedure" style="display: none;">

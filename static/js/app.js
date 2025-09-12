@@ -1,4 +1,4 @@
-// PreDentify - Appointment Time Estimator JavaScript
+// PreDentify - Appointment Time Estimator JavaScript (Enhanced)
 
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('estimationForm');
@@ -9,6 +9,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const addProcedureBtn = document.getElementById('addProcedure');
     
     let procedureCount = 1;
+    let providerProcedureCompatibility = {};
+    let procedureProcedureCompatibility = {};
+    
+    // Load compatibility data
+    loadCompatibilityData();
 
     // Handle form submission
     form.addEventListener('submit', function(e) {
@@ -21,6 +26,22 @@ document.addEventListener('DOMContentLoaded', function() {
         addProcedureRow();
     });
 
+    async function loadCompatibilityData() {
+        try {
+            const [providerResponse, procedureResponse] = await Promise.all([
+                fetch('/api/provider_procedure_compatibility'),
+                fetch('/api/procedure_provider_compatibility')
+            ]);
+            
+            providerProcedureCompatibility = await providerResponse.json();
+            procedureProcedureCompatibility = await procedureResponse.json();
+            
+            console.log('Compatibility data loaded');
+        } catch (error) {
+            console.error('Failed to load compatibility data:', error);
+        }
+    }
+
     function addProcedureRow() {
         const procedureHtml = `
             <div class="procedure-item border rounded p-3 mb-3">
@@ -29,23 +50,23 @@ document.addEventListener('DOMContentLoaded', function() {
                         <label class="form-label small">Procedure</label>
                         <select class="form-select procedure-select" name="procedures[${procedureCount}][procedure]" required>
                             <option value="">Select procedure...</option>
-                            ${getProcedureOptions()}
+                            ${getProcedureOptions(true)}
                         </select>
                     </div>
                     <div class="col-md-2">
                         <label class="form-label small">Teeth</label>
-                        <input type="number" class="form-control" name="procedures[${procedureCount}][num_teeth]" 
-                               value="1" min="1" max="32" placeholder="1">
+                        <input type="number" class="form-control teeth-input" name="procedures[${procedureCount}][num_teeth]" 
+                               value="1" min="1" max="32" placeholder="1" data-index="${procedureCount}">
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-2" id="quadrantsField-${procedureCount}">
                         <label class="form-label small">Quadrants</label>
                         <input type="number" class="form-control" name="procedures[${procedureCount}][num_quadrants]" 
-                               value="1" min="1" max="4" placeholder="1">
+                               value="1" min="1" max="4" placeholder="1" id="quadrantsInput-${procedureCount}">
                     </div>
-                    <div class="col-md-2">
-                        <label class="form-label small">Surfaces/Canals</label>
+                    <div class="col-md-2" id="surfacesCanalsField-${procedureCount}">
+                        <label class="form-label small" id="surfacesCanalsLabel-${procedureCount}">Surfaces/Canals</label>
                         <input type="number" class="form-control" name="procedures[${procedureCount}][num_surfaces]" 
-                               value="1" min="1" max="10" placeholder="1">
+                               value="1" min="1" max="10" placeholder="1" id="surfacesCanalsInput-${procedureCount}">
                     </div>
                     <div class="col-md-2">
                         <button type="button" class="btn btn-outline-danger btn-sm remove-procedure">
@@ -66,12 +87,25 @@ document.addEventListener('DOMContentLoaded', function() {
         addProcedureEventListeners();
     }
 
-    function getProcedureOptions() {
+    function getProcedureOptions(isAdditionalProcedure = false) {
         const firstSelect = document.querySelector('.procedure-select');
-        if (firstSelect) {
+        if (firstSelect && !isAdditionalProcedure) {
             return firstSelect.innerHTML;
         }
-        return '';
+        
+        // For additional procedures, return all procedures with updated names
+        const allProcedures = [
+            'Crown preparation', 'Crown Delivery', 'Extraction', 'Filling', 'Root Canal', 
+            'Implant surgery', 'Hygiene', 'Kids Hygiene 8-11', 'Laser Bacterial Reduction',
+            'Polish', 'Scaling', 'Appliance Adjustment', 'Bite Adjustment', 'Botox',
+            'CBCT', 'Consultation', 'Exam', 'Fluoride', 'Impressions', 'Intraoral Photos',
+            'Night Guard', 'Panoramic X-ray', 'Periapical X-ray', 'Prescription',
+            'Referral', 'Retainer', 'Sealants', 'Sedation', 'Splint', 'Suture Removal',
+            'Temporary', 'Veneer', 'Whitening', 'Bridge', 'Denture', 'Partial Denture',
+            'Onlay', 'Inlay', 'Post and Core', 'Periodontal Surgery', 'Gum Graft'
+        ];
+        
+        return allProcedures.map(proc => `<option value="${proc}">${proc}</option>`).join('');
     }
 
     function updateRemoveButtons() {
@@ -85,8 +119,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function addProcedureEventListeners() {
         // Add event listeners to all procedure inputs
-        document.querySelectorAll('.procedure-select, .procedure-item input[type="number"]').forEach(input => {
-            input.addEventListener('change', scheduleAutoCalculate);
+        document.querySelectorAll('.procedure-select').forEach((select, index) => {
+            select.addEventListener('change', function() {
+                handleProcedureChange(this, index);
+                scheduleAutoCalculate();
+            });
+        });
+        
+        document.querySelectorAll('.teeth-input').forEach(input => {
+            input.addEventListener('change', function() {
+                handleTeethChange(this);
+                scheduleAutoCalculate();
+            });
+        });
+        
+        document.querySelectorAll('.procedure-item input[type="number"]').forEach(input => {
+            if (!input.classList.contains('teeth-input')) {
+                input.addEventListener('change', scheduleAutoCalculate);
+            }
         });
         
         // Add event listeners to remove buttons
@@ -97,6 +147,124 @@ document.addEventListener('DOMContentLoaded', function() {
                 scheduleAutoCalculate();
             });
         });
+    }
+
+    function handleProcedureChange(selectElement, index) {
+        const procedure = selectElement.value;
+        const surfacesField = document.getElementById(`surfacesCanalsField-${index}`);
+        const surfacesLabel = document.getElementById(`surfacesCanalsLabel-${index}`);
+        const surfacesInput = document.getElementById(`surfacesCanalsInput-${index}`);
+        
+        if (surfacesField && surfacesLabel && surfacesInput) {
+            // Show/hide and update surfaces/canals field based on procedure
+            if (procedure.toLowerCase().includes('filling')) {
+                surfacesField.style.display = 'block';
+                surfacesLabel.textContent = 'Surfaces';
+                surfacesInput.placeholder = 'Surfaces';
+            } else if (procedure.toLowerCase().includes('root canal')) {
+                surfacesField.style.display = 'block';
+                surfacesLabel.textContent = 'Canals';
+                surfacesInput.placeholder = 'Canals';
+            } else {
+                surfacesField.style.display = 'none';
+            }
+        }
+        
+        // Update provider options if this is the first procedure
+        if (index === 0) {
+            updateProviderOptions(procedure);
+        }
+    }
+
+    function handleTeethChange(teethInput) {
+        const index = teethInput.getAttribute('data-index') || '0';
+        const numTeeth = parseInt(teethInput.value) || 1;
+        const quadrantsField = document.getElementById(`quadrantsField-${index}`);
+        
+        if (quadrantsField) {
+            // Show quadrants only if more than one tooth
+            quadrantsField.style.display = numTeeth > 1 ? 'block' : 'none';
+        }
+    }
+
+    function updateProviderOptions(selectedProcedure) {
+        const providerSelect = document.getElementById('provider');
+        const currentProvider = providerSelect.value;
+        
+        // Clear current options except the first one
+        providerSelect.innerHTML = '<option value="">Select a provider...</option>';
+        
+        if (selectedProcedure && procedureProcedureCompatibility[selectedProcedure]) {
+            // Add only compatible providers
+            procedureProcedureCompatibility[selectedProcedure].forEach(provider => {
+                const option = document.createElement('option');
+                option.value = provider;
+                option.textContent = provider;
+                if (provider === currentProvider) {
+                    option.selected = true;
+                }
+                providerSelect.appendChild(option);
+            });
+        } else {
+            // Add all providers if no procedure selected or no compatibility data
+            const allProviders = ['Miekella', 'Kayla', 'Radin', 'Marina', 'Monse', 
+                                'Jessica', 'Amber', 'Kym', 'Natalia', 'Hygiene'];
+            allProviders.forEach(provider => {
+                const option = document.createElement('option');
+                option.value = provider;
+                option.textContent = provider;
+                if (provider === currentProvider) {
+                    option.selected = true;
+                }
+                providerSelect.appendChild(option);
+            });
+        }
+    }
+
+    function updateProcedureOptions(selectedProvider) {
+        const firstProcedureSelect = document.querySelector('.procedure-select');
+        if (!firstProcedureSelect) return;
+        
+        const currentProcedure = firstProcedureSelect.value;
+        
+        // Clear current options except the first one
+        firstProcedureSelect.innerHTML = '<option value="">Select procedure...</option>';
+        
+        if (selectedProvider && providerProcedureCompatibility[selectedProvider]) {
+            // Add only procedures this provider can do, with updated names
+            providerProcedureCompatibility[selectedProvider].forEach(procedure => {
+                const option = document.createElement('option');
+                option.value = procedure;
+                // Update procedure names
+                let displayName = procedure;
+                if (procedure === 'Crown') displayName = 'Crown preparation';
+                if (procedure === 'Implant') displayName = 'Implant surgery';
+                
+                option.textContent = displayName;
+                if (procedure === currentProcedure) {
+                    option.selected = true;
+                }
+                firstProcedureSelect.appendChild(option);
+            });
+        } else {
+            // Add all procedures if no provider selected
+            const allProcedures = [
+                'Crown preparation', 'Crown Delivery', 'Extraction', 'Filling', 'Root Canal', 
+                'Implant surgery', 'Hygiene', 'Kids Hygiene 8-11', 'Laser Bacterial Reduction',
+                'Polish', 'Scaling'
+                // Add more as needed
+            ];
+            allProcedures.forEach(procedure => {
+                const option = document.createElement('option');
+                option.value = procedure === 'Crown preparation' ? 'Crown' : 
+                              procedure === 'Implant surgery' ? 'Implant' : procedure;
+                option.textContent = procedure;
+                if (option.value === currentProcedure) {
+                    option.selected = true;
+                }
+                firstProcedureSelect.appendChild(option);
+            });
+        }
     }
 
     async function calculateAppointmentTime() {
@@ -193,11 +361,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     <h6 class="text-secondary">Procedure Details:</h6>
             `;
             procedures.forEach((proc, index) => {
+                const isFirst = proc.is_first_procedure;
+                const timeReduced = proc.time_reduced;
+                const canPerform = proc.provider_can_perform;
+                
                 html += `
-                    <div class="small text-muted mb-1">
+                    <div class="small mb-1 ${!canPerform ? 'text-warning' : 'text-muted'}">
                         ${index + 1}. ${proc.procedure} (${proc.num_teeth} tooth${proc.num_teeth > 1 ? 's' : ''}, 
                         ${proc.num_quadrants} quadrant${proc.num_quadrants > 1 ? 's' : ''}, 
                         ${proc.num_surfaces} surface${proc.num_surfaces > 1 ? 's' : ''}/canal${proc.num_surfaces > 1 ? 's' : ''})
+                        ${timeReduced ? ' <span class="badge bg-info">30% reduced</span>' : ''}
+                        ${!canPerform ? ' <span class="badge bg-warning">Provider compatibility issue</span>' : ''}
                     </div>
                 `;
             });
@@ -349,7 +523,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Add event listeners for auto-calculation
-    providerSelect.addEventListener('change', scheduleAutoCalculate);
+    providerSelect.addEventListener('change', function() {
+        updateProcedureOptions(this.value);
+        scheduleAutoCalculate();
+    });
     
     // Add event listeners for checkboxes
     document.querySelectorAll('input[name="mitigating_factors"]').forEach(checkbox => {
@@ -358,6 +535,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize procedure event listeners
     addProcedureEventListeners();
+    
+    // Initialize the first procedure's conditional fields
+    handleProcedureChange(document.querySelector('.procedure-select'), 0);
+    handleTeethChange(document.querySelector('.teeth-input'));
 
     // Initialize tooltips (if using Bootstrap tooltips)
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
