@@ -10,6 +10,7 @@ class ProcedureDataLoader:
         self.mitigating_factors = []
         self.provider_compatibility = {}
         self.providers = []
+        self.available_procedures = []  # Only procedures that are actually available
         self.load_data()
 
     def load_data(self):
@@ -20,17 +21,107 @@ class ProcedureDataLoader:
                 self.mitigating_factors = json.load(f)
             with open(os.path.join(self.data_dir, 'provider_compatibility.json'), 'r') as f:
                 self.provider_compatibility = json.load(f)
+            
+            # Build list of all providers
             all_providers = set()
             for providers_list in self.provider_compatibility.values():
                 all_providers.update(providers_list)
             self.providers = sorted(list(all_providers))
-            print(f"Loaded {len(self.procedures_data)} procedures from JSON data")
+            
+            # Filter to only available procedures
+            self.available_procedures = self._filter_available_procedures()
+            
+            print(f"Loaded {len(self.procedures_data)} total procedures from JSON data")
+            print(f"Found {len(self.available_procedures)} available procedures")
         except FileNotFoundError as e:
             print(f"Error loading JSON data: {e}")
             print("Please ensure JSON data files exist in the data/ directory")
             raise
 
+    def _filter_available_procedures(self) -> List[str]:
+        """
+        Filter procedures to only include those that are:
+        1. Valid (have proper time data)
+        2. Available (have at least one provider who can perform them)
+        3. Active (not deprecated or inactive)
+        """
+        available = []
+        
+        for procedure_name, proc_data in self.procedures_data.items():
+            # Check if procedure has valid time data
+            if not self._is_valid_procedure_data(proc_data):
+                print(f"Skipping {procedure_name}: Invalid time data")
+                continue
+                
+            # Check if procedure has at least one provider who can perform it
+            if not self._has_available_providers(procedure_name):
+                print(f"Skipping {procedure_name}: No available providers")
+                continue
+                
+            # Check if procedure is active (not deprecated)
+            if not self._is_active_procedure(procedure_name, proc_data):
+                print(f"Skipping {procedure_name}: Inactive/deprecated")
+                continue
+                
+            available.append(procedure_name)
+        
+        return sorted(available)
+
+    def _is_valid_procedure_data(self, proc_data: Dict) -> bool:
+        """Check if procedure has valid time data"""
+        try:
+            assistant_time = float(proc_data.get('assistant_time', 0))
+            doctor_time = float(proc_data.get('doctor_time', 0))
+            total_time = float(proc_data.get('total_time', 0))
+            
+            # Check for valid numeric values
+            if math.isnan(assistant_time) or math.isnan(doctor_time) or math.isnan(total_time):
+                return False
+                
+            # Check for reasonable time values (not negative, not zero total)
+            if total_time <= 0 or assistant_time < 0 or doctor_time < 0:
+                return False
+                
+            # Check that assistant + doctor time equals total time (within 1 minute tolerance)
+            calculated_total = assistant_time + doctor_time
+            if abs(calculated_total - total_time) > 1.0:
+                print(f"Warning: Time mismatch - assistant: {assistant_time}, doctor: {doctor_time}, total: {total_time}")
+                # Don't reject for this, just warn
+                
+            return True
+        except (ValueError, TypeError):
+            return False
+
+    def _has_available_providers(self, procedure_name: str) -> bool:
+        """Check if procedure has at least one provider who can perform it"""
+        if procedure_name not in self.provider_compatibility:
+            return False
+            
+        providers = self.provider_compatibility[procedure_name]
+        return len(providers) > 0 and all(provider.strip() for provider in providers)
+
+    def _is_active_procedure(self, procedure_name: str, proc_data: Dict) -> bool:
+        """Check if procedure is active (not deprecated or inactive)"""
+        # Check for deprecated/inactive indicators
+        section = proc_data.get('section', '')
+        
+        # Skip procedures in deprecated sections
+        if section in ['deprecated', 'inactive', 'old']:
+            return False
+            
+        # Skip procedures with specific names that indicate they're not active
+        inactive_keywords = ['old', 'deprecated', 'inactive', 'test', 'temp']
+        if any(keyword in procedure_name.lower() for keyword in inactive_keywords):
+            return False
+            
+        return True
+
     def get_procedures(self) -> List[str]:
+        """Return only available procedures"""
+        return self.available_procedures
+
+    def get_all_procedures(self) -> List[str]:
+        """Return all procedures (including unavailable ones) - for debugging"""
         return list(self.procedures_data.keys())
 
     def get_providers(self) -> List[str]:
