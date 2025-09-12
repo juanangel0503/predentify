@@ -128,7 +128,7 @@
                                             <label class="form-check-label" for="factor_{{ loop.index }}">
                                                 {{ factor.name }}
                                                 <small class="text-muted">
-                                                    ({% if factor.multiplier > 2 %}+{{ factor.multiplier }} min{% else %}{{ factor.multiplier }}x{% endif %})
+                                                    ({% if factor.value > 2 %}+{{ factor.value }} min{% else %}{{ factor.value }}x{% endif %})
                                                 </small>
                                             </label>
                                         </div>
