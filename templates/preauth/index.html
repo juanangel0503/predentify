@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PreDentify - Pre-Authorization Generator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/preauth/preauth.css') }}" rel="stylesheet">
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Header -->
+        <header class="bg-primary text-white py-3 mb-4">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h1 class="mb-0">
+                            <i class="fas fa-file-medical me-2"></i>
+                            PreDentify - Pre-Authorization Generator
+                        </h1>
+                        <p class="mb-0 opacity-75">Generate insurer-ready pre-authorization requests</p>
+                    </div>
+                    <div class="col-auto">
+                        <a href="{{ url_for('index') }}" class="btn btn-light">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Back to Time Estimator
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="container">
+            <div class="row">
+                <!-- Input Form -->
+                <div class="col-lg-5">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">
+                                <i class="fas fa-edit me-2"></i>
+                                Step 1: Input Clinical Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="preAuthForm">
+                                <!-- Clinical Description -->
+                                <div class="mb-3">
+                                    <label for="clinicalText" class="form-label">
+                                        <i class="fas fa-stethoscope me-1"></i>
+                                        Clinical Description *
+                                    </label>
+                                    <textarea class="form-control" id="clinicalText" name="clinical_text" 
+                                            rows="6" required 
+                                            placeholder="Paste clinical description here...
+
+Example: 
+'Patient presents with fractured crown on tooth 26. Existing PFM crown was placed 9 years ago. Recurrent mesial and distal caries present with documented fracture line. Tooth is endodontically treated. Full coverage replacement indicated.'"></textarea>
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Include relevant clinical findings, history, and treatment rationale
+                                    </small>
+                                </div>
+
+                                <!-- Procedure Selection -->
+                                <div class="mb-3">
+                                    <label for="procedureType" class="form-label">
+                                        <i class="fas fa-procedures me-1"></i>
+                                        Procedure Type *
+                                    </label>
+                                    <select class="form-select" id="procedureType" name="procedure_type" required>
+                                        <option value="">Select procedure...</option>
+                                        {% for procedure in procedures %}
+                                        <option value="{{ procedure }}">{{ procedure.replace('_', ' ').title() }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <!-- Insurer Selection -->
+                                <div class="mb-3">
+                                    <label for="insurerType" class="form-label">
+                                        <i class="fas fa-building me-1"></i>
+                                        Insurer *
+                                    </label>
+                                    <select class="form-select" id="insurerType" name="insurer_type" required>
+                                        <option value="">Select insurer...</option>
+                                        {% for insurer in insurers %}
+                                        <option value="{{ insurer }}">
+                                            {% if insurer == 'CDCP' %}
+                                                Canadian Dental Care Plan (CDCP)
+                                            {% else %}
+                                                Private Insurance (Generic)
+                                            {% endif %}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <!-- Generate Button -->
+                                <button type="submit" class="btn btn-primary btn-lg w-100">
+                                    <i class="fas fa-magic me-2"></i>
+                                    Generate Pre-Authorization
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Extracted Information Panel -->
+                <div class="col-lg-7">
+                    <!-- Step 2: Extracted Information -->
+                    <div class="card shadow-sm mb-4" id="extractedInfoCard" style="display: none;">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-search me-2"></i>
+                                Step 2: Extracted Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="extractedInfo">
+                                <!-- Extracted information will be displayed here -->
+                            </div>
+                            <div class="mt-3">
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="editInfoBtn">
+                                    <i class="fas fa-edit me-1"></i>
+                                    Edit Information
+                                </button>
+                                <button type="button" class="btn btn-primary btn-sm" id="regenerateBtn" style="display: none;">
+                                    <i class="fas fa-sync me-1"></i>
+                                    Regenerate
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Results -->
+                    <div class="card shadow-sm" id="resultsCard" style="display: none;">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-file-alt me-2"></i>
+                                Step 3: Pre-Authorization Results
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Tabs for different result sections -->
+                            <ul class="nav nav-tabs" id="resultTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="narrative-tab" data-bs-toggle="tab" 
+                                            data-bs-target="#narrative" type="button" role="tab">
+                                        <i class="fas fa-file-text me-1"></i>
+                                        Narrative
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="checklist-tab" data-bs-toggle="tab" 
+                                            data-bs-target="#checklist" type="button" role="tab">
+                                        <i class="fas fa-tasks me-1"></i>
+                                        Checklist
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="prompts-tab" data-bs-toggle="tab" 
+                                            data-bs-target="#prompts" type="button" role="tab">
+                                        <i class="fas fa-question-circle me-1"></i>
+                                        Missing Info
+                                    </button>
+                                </li>
+                            </ul>
+
+                            <div class="tab-content mt-3" id="resultTabContent">
+                                <!-- Narrative Tab -->
+                                <div class="tab-pane fade show active" id="narrative" role="tabpanel">
+                                    <div class="narrative-container">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h6 class="mb-0">Insurer-Ready Narrative</h6>
+                                            <button class="btn btn-outline-primary btn-sm" id="copyNarrativeBtn">
+                                                <i class="fas fa-copy me-1"></i>
+                                                Copy
+                                            </button>
+                                        </div>
+                                        <div class="narrative-text p-3 border rounded bg-light" id="narrativeText">
+                                            <!-- Generated narrative will appear here -->
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Checklist Tab -->
+                                <div class="tab-pane fade" id="checklist" role="tabpanel">
+                                    <div class="checklist-container">
+                                        <h6 class="mb-3">Required Documentation</h6>
+                                        <div id="checklistItems">
+                                            <!-- Checklist items will appear here -->
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Missing Info Tab -->
+                                <div class="tab-pane fade" id="prompts" role="tabpanel">
+                                    <div class="prompts-container">
+                                        <h6 class="mb-3">Missing Information Prompts</h6>
+                                        <div id="missingInfoPrompts">
+                                            <!-- Missing info prompts will appear here -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Policy Flags Alert -->
+            <div id="policyFlagsAlert" class="alert alert-warning mt-3" style="display: none;">
+                <h6><i class="fas fa-exclamation-triangle me-2"></i>Policy Notes</h6>
+                <div id="policyFlagsList">
+                    <!-- Policy flags will appear here -->
+                </div>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="loadingSpinner" class="text-center mt-4" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Generating pre-authorization...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Extracted Information</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="editForm">
+                        <!-- Edit form will be generated here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveEditsBtn">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/preauth/preauth.js') }}"></script>
+</body>
+</html>

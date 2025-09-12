@@ -4,6 +4,7 @@ import numpy as np
 from data_loader import ProcedureDataLoader
 
 app = Flask(__name__)
+app.secret_key = 'your-secret-key-here-change-in-production'  # Enable sessions
 
 # Initialize data loader
 data_loader = ProcedureDataLoader('VDH_Procedure_Durations_rev0.1.xlsx')
@@ -25,16 +26,33 @@ def estimate_time():
     """Calculate appointment time based on selected parameters"""
     try:
         data = request.get_json()
-        procedure = data.get('procedure')
         provider = data.get('provider')
         mitigating_factors = data.get('mitigating_factors', [])
+        procedures_data = data.get('procedures', [])
         
-        # Get base times
-        result = data_loader.calculate_appointment_time(
-            procedure=procedure,
-            provider=provider,
-            mitigating_factors=mitigating_factors
-        )
+        # Handle both single procedure (backward compatibility) and multiple procedures
+        if not procedures_data:
+            # Backward compatibility: single procedure
+            procedure = data.get('procedure')
+            num_teeth = int(data.get('num_teeth', 1))
+            num_surfaces = int(data.get('num_surfaces', 1))
+            num_quadrants = int(data.get('num_quadrants', 1))
+            
+            result = data_loader.calculate_single_appointment_time(
+                procedure=procedure,
+                provider=provider,
+                mitigating_factors=mitigating_factors,
+                num_teeth=num_teeth,
+                num_surfaces=num_surfaces,
+                num_quadrants=num_quadrants
+            )
+        else:
+            # Multiple procedures
+            result = data_loader.calculate_appointment_time(
+                procedures=procedures_data,
+                provider=provider,
+                mitigating_factors=mitigating_factors
+            )
         
         return jsonify(result)
     
@@ -57,4 +75,127 @@ def get_mitigating_factors():
     return jsonify(data_loader.get_mitigating_factors())
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000) 
+    app.run(debug=True, host='0.0.0.0', port=5000)
+
+# Pre-Authorization Generator routes
+from preauth.generator import PreAuthGenerator
+
+# Initialize pre-auth generator
+preauth_generator = PreAuthGenerator()
+
+@app.route('/preauth')
+def preauth_index():
+    """Pre-authorization generator main page"""
+    procedures = preauth_generator.get_supported_procedures()
+    insurers = preauth_generator.get_supported_insurers()
+    
+    return render_template('preauth/index.html', 
+                         procedures=procedures,
+                         insurers=insurers)
+
+@app.route('/preauth/generate', methods=['POST'])
+def generate_preauth():
+    """Generate pre-authorization from clinical text"""
+    try:
+        data = request.get_json()
+        clinical_text = data.get('clinical_text', '')
+        procedure_type = data.get('procedure_type', '')
+        insurer_type = data.get('insurer_type', '')
+        
+        if not all([clinical_text, procedure_type, insurer_type]):
+            return jsonify({
+                'success': False,
+                'error': 'Missing required fields: clinical_text, procedure_type, insurer_type'
+            }), 400
+        
+        result = preauth_generator.generate_preauth(clinical_text, procedure_type, insurer_type)
+        
+        # Convert result to dictionary for JSON serialization
+        response_data = {
+            'success': result.success,
+            'narrative': result.narrative,
+            'checklist': result.checklist,
+            'missing_info_prompts': result.missing_info_prompts,
+            'policy_flags': result.policy_flags,
+            'validation': {
+                'is_valid': result.validation.is_valid,
+                'missing_fields': result.validation.missing_fields,
+                'warnings': result.validation.warnings
+            }
+        }
+        
+        # Include case record for editing if successful
+        if result.success and result.case_record:
+            response_data['case_record_id'] = id(result.case_record)  # Simple ID for demo
+            # Store case record in session for editing (in production, use proper storage)
+            from flask import session
+            session[f'case_record_{id(result.case_record)}'] = result.case_record
+        
+        return jsonify(response_data)
+    
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Error generating pre-authorization: {str(e)}'
+        }), 500
+
+@app.route('/preauth/regenerate', methods=['POST'])
+def regenerate_preauth():
+    """Regenerate pre-authorization with edits"""
+    try:
+        data = request.get_json()
+        case_record_id = data.get('case_record_id')
+        edits = data.get('edits', {})
+        
+        if not case_record_id:
+            return jsonify({
+                'success': False,
+                'error': 'Missing case_record_id'
+            }), 400
+        
+        # Retrieve case record from session (in production, use proper storage)
+        from flask import session
+        case_record = session.get(f'case_record_{case_record_id}')
+        
+        if not case_record:
+            return jsonify({
+                'success': False,
+                'error': 'Case record not found'
+            }), 404
+        
+        result = preauth_generator.regenerate_with_edits(case_record, edits)
+        
+        # Convert result to dictionary
+        response_data = {
+            'success': result.success,
+            'narrative': result.narrative,
+            'checklist': result.checklist,
+            'missing_info_prompts': result.missing_info_prompts,
+            'policy_flags': result.policy_flags,
+            'validation': {
+                'is_valid': result.validation.is_valid,
+                'missing_fields': result.validation.missing_fields,
+                'warnings': result.validation.warnings
+            }
+        }
+        
+        return jsonify(response_data)
+    
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Error regenerating pre-authorization: {str(e)}'
+        }), 500
+
+@app.route('/api/preauth/procedures')
+def get_preauth_procedures():
+    """API endpoint to get supported procedures"""
+    return jsonify(preauth_generator.get_supported_procedures())
+
+@app.route('/api/preauth/insurers')
+def get_preauth_insurers():
+    """API endpoint to get supported insurers"""
+    return jsonify(preauth_generator.get_supported_insurers())
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
