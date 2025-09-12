@@ -82,14 +82,20 @@ class ProcedureDataLoader:
             doctor_time = row['Doctor Time']
             total_time = row['Duration Total']
             
+            # Handle NaN values - replace with 0
+            assistant_time = 0.0 if pd.isna(assistant_time) else float(assistant_time)
+            total_time = 0.0 if pd.isna(total_time) else float(total_time)
+            
             # If Doctor Time is NaN, calculate it as Total - Assistant
             if pd.isna(doctor_time):
-                doctor_time = total_time - assistant_time
+                doctor_time = max(0.0, total_time - assistant_time)
+            else:
+                doctor_time = float(doctor_time)
             
             return {
-                'assistant_time': float(assistant_time),
-                'doctor_time': float(doctor_time),
-                'total_time': float(total_time)
+                'assistant_time': assistant_time,
+                'doctor_time': doctor_time,
+                'total_time': total_time
             }
         
         # Look in Procedure 2 section
@@ -101,14 +107,20 @@ class ProcedureDataLoader:
             doctor_time = row['Doctor Time.1']
             total_time = row['Duration']
             
+            # Handle NaN values - replace with 0
+            assistant_time = 0.0 if pd.isna(assistant_time) else float(assistant_time)
+            total_time = 0.0 if pd.isna(total_time) else float(total_time)
+            
             # If Doctor Time is NaN, calculate it as Total - Assistant
             if pd.isna(doctor_time):
-                doctor_time = total_time - assistant_time
+                doctor_time = max(0.0, total_time - assistant_time)
+            else:
+                doctor_time = float(doctor_time)
             
             return {
-                'assistant_time': float(assistant_time),
-                'doctor_time': float(doctor_time),
-                'total_time': float(total_time)
+                'assistant_time': assistant_time,
+                'doctor_time': doctor_time,
+                'total_time': total_time
             }
         
         # Procedure not found
@@ -142,7 +154,19 @@ class ProcedureDataLoader:
         
         Excel MROUND uses traditional rounding where 0.5 always rounds up,
         while Python's round() uses banker's rounding (0.5 rounds to nearest even).
+        
+        Handles NaN values by returning 0.
         """
+        import math
+        
+        # Handle NaN values
+        if pd.isna(minutes) or math.isnan(minutes):
+            return 0
+            
+        # Handle negative values
+        if minutes < 0:
+            return 0
+            
         return int(math.floor(minutes / 10 + 0.5) * 10)
     
     def calculate_appointment_time(self, procedures: List[Dict], provider: str, 
