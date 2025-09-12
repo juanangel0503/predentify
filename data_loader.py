@@ -63,6 +63,7 @@ class ProcedureDataLoader:
             factors.append({
                 'name': factor_name,
                 'value': value,
+                'multiplier': value,
                 'is_multiplier': value <= 2.0  # Values <= 2 are multipliers, > 2 are additive
             })
         
@@ -273,13 +274,13 @@ class ProcedureDataLoader:
                     final_assistant_time *= value
                     final_doctor_time *= value
                     final_total_time *= value
-                    applied_factors.append(f"{factor_name} (×{value})")
+                    applied_factors.append({"name": factor_name, "multiplier": value})
                 else:
                     # Apply as additive
                     final_assistant_time += value
                     final_doctor_time += value
                     final_total_time += value
-                    applied_factors.append(f"{factor_name} (+{value} min)")
+                    applied_factors.append({"name": factor_name, "multiplier": value})
         
         # Round all times to nearest 10 minutes (matches Excel MROUND)
         final_assistant_time = self.round_to_nearest_10(final_assistant_time)
