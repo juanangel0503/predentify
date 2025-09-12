@@ -315,7 +315,12 @@ class ProcedureDataLoader:
                 'total_time': times['total_time'],
                 'teeth_adjustment': times['teeth_adjustment'],
                 'surfaces_adjustment': times['surfaces_adjustment'],
-                'quadrants_adjustment': times['quadrants_adjustment']
+                'quadrants_adjustment': times['quadrants_adjustment'],
+                'teeth_adjustments': {  # Add this for JavaScript compatibility
+                    'assistant_time': times['teeth_adjustment'] * 0.3,  # Approximate distribution
+                    'doctor_time': times['teeth_adjustment'] * 0.7,
+                    'total_time': times['teeth_adjustment']
+                }
             })
         
         # Apply mitigating factors exactly as in Excel formula:
@@ -371,6 +376,16 @@ class ProcedureDataLoader:
             'final_assistant_time': final_assistant_time,
             'final_doctor_time': final_doctor_time,
             'final_total_time': final_total_time,
+            'base_times': {
+                'assistant_time': total_assistant_time,
+                'doctor_time': total_doctor_time,
+                'total_time': total_base_time
+            },
+            'final_times': {
+                'assistant_time': final_assistant_time,
+                'doctor_time': final_doctor_time,
+                'total_time': final_total_time
+            },
             'applied_factors': applied_factors,
             'provider': provider
         }
