@@ -15,6 +15,22 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load compatibility data
     loadCompatibilityData();
 
+    // Helper function to check if procedure is excluded from detail prompts
+    function isExcludedProcedure(procedure) {
+        const excludedProcedures = [
+            // Exact names from your Excel system:
+            'Appliance Adjustment', 'Bite Adjustment', 'Botox', 'CBCT', 'Consultation',
+            'Crown', 'Crown Re-cement', 'Emergency Exam', 'Happy Visit', 'Hygiene',
+            'Implant Follow-up', 'In Office Whitenings', 'Invisalign Complete',
+            'Invisalign Insert 1', 'Invisalign Insert 2', 'Invisalign Recall',
+            'Kids Hygiene 0-2', 'Kids Hygiene 3-7', 'Kids Hygiene 8-11',
+            'Laser Bacterial Reduction', 'Laser Desensitization', 'New Patient Exam',
+            'Nightguard Insert', 'Post Op Exam', 'Re-Eval, Pol & FL', 'Recall Exam', 
+            'SDF Application', 'Sedation', 'Specific Exam', 'Surgical Debridement'
+        ];
+        return excludedProcedures.includes(procedure);
+    }
+
     // Handle form submission
     form.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -53,7 +69,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             ${getProcedureOptions(true)}
                         </select>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-2" id="teethField-${procedureCount}">
                         <label class="form-label small">Teeth</label>
                         <input type="number" class="form-control teeth-input" name="procedures[${procedureCount}][num_teeth]" 
                                value="1" min="1" max="32" placeholder="1" data-index="${procedureCount}">
@@ -154,19 +170,56 @@ document.addEventListener('DOMContentLoaded', function() {
         const surfacesField = document.getElementById(`surfacesCanalsField-${index}`);
         const surfacesLabel = document.getElementById(`surfacesCanalsLabel-${index}`);
         const surfacesInput = document.getElementById(`surfacesCanalsInput-${index}`);
+        const teethInput = selectElement.closest('.procedure-item').querySelector('.teeth-input');
+        
+        const isExcluded = isExcludedProcedure(procedure);
+        
+        // Hide/show teeth input based on exclusion
+        if (teethInput) {
+            const teethField = teethInput.closest('.col-md-2');
+            if (teethField) {
+                teethField.style.display = isExcluded ? 'none' : 'block';
+                if (isExcluded) {
+                    teethInput.value = 1; // Set to default when hidden
+                }
+            }
+        }
         
         if (surfacesField && surfacesLabel && surfacesInput) {
-            // Show/hide and update surfaces/canals field based on procedure
-            if (procedure.toLowerCase().includes('filling')) {
-                surfacesField.style.display = 'block';
-                surfacesLabel.textContent = 'Surfaces';
-                surfacesInput.placeholder = 'Surfaces';
-            } else if (procedure.toLowerCase().includes('root canal')) {
-                surfacesField.style.display = 'block';
-                surfacesLabel.textContent = 'Canals';
-                surfacesInput.placeholder = 'Canals';
-            } else {
+            if (isExcluded) {
+                // Hide surfaces/canals for excluded procedures
                 surfacesField.style.display = 'none';
+                surfacesInput.value = 1; // Set to default when hidden
+            } else {
+                // Show/hide and update surfaces/canals field based on procedure type
+                if (procedure.toLowerCase().includes('filling')) {
+                    surfacesField.style.display = 'block';
+                    surfacesLabel.textContent = 'Surfaces';
+                    surfacesInput.placeholder = 'Surfaces';
+                } else if (procedure.toLowerCase().includes('root canal')) {
+                    surfacesField.style.display = 'block';
+                    surfacesLabel.textContent = 'Canals';
+                    surfacesInput.placeholder = 'Canals';
+                } else {
+                    surfacesField.style.display = 'none';
+                    surfacesInput.value = 1; // Set to default when hidden
+                }
+            }
+        }
+        
+        // Hide quadrants for excluded procedures
+        const quadrantsField = document.getElementById(`quadrantsField-${index}`);
+        if (quadrantsField) {
+            if (isExcluded) {
+                quadrantsField.style.display = 'none';
+                const quadrantsInput = document.getElementById(`quadrantsInput-${index}`);
+                if (quadrantsInput) {
+                    quadrantsInput.value = 1; // Set to default when hidden
+                }
+            } else {
+                // Show/hide quadrants based on teeth count (existing logic)
+                const numTeeth = parseInt(teethInput?.value) || 1;
+                quadrantsField.style.display = numTeeth > 1 ? 'block' : 'none';
             }
         }
         
@@ -181,8 +234,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const numTeeth = parseInt(teethInput.value) || 1;
         const quadrantsField = document.getElementById(`quadrantsField-${index}`);
         
-        if (quadrantsField) {
-            // Show quadrants only if more than one tooth
+        // Check if current procedure is excluded from detail prompts
+        const procedureSelect = teethInput.closest('.procedure-item').querySelector('.procedure-select');
+        const procedure = procedureSelect ? procedureSelect.value : '';
+        
+        const isExcluded = isExcludedProcedure(procedure);
+        
+        if (quadrantsField && !isExcluded) {
+            // Show quadrants only if more than one tooth and procedure is not excluded
             quadrantsField.style.display = numTeeth > 1 ? 'block' : 'none';
         }
     }
