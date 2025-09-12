@@ -22,7 +22,6 @@ document.addEventListener('DOMContentLoaded', function() {
         'Botox',
         'CBCT',
         'Consultation',
-        'Crown',
         'Re-cement',
         'Emergency Exam',
         'Happy Visit',
