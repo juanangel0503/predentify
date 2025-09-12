@@ -140,10 +140,10 @@ class ProcedureDataLoader:
             time_adjustments['total_time'] += (num_surfaces - 1) * 38
             
         elif 'extraction' in procedure.lower():
-            # Extractions: +20 min per additional tooth
-            time_adjustments['assistant_time'] += (num_teeth - 1) * 5
-            time_adjustments['doctor_time'] += (num_teeth - 1) * 20
-            time_adjustments['total_time'] += (num_teeth - 1) * 25
+            # Extractions: +15 min per additional tooth (3 assistant + 12 doctor)
+            time_adjustments['assistant_time'] += (num_teeth - 1) * 3
+            time_adjustments['doctor_time'] += (num_teeth - 1) * 12
+            time_adjustments['total_time'] += (num_teeth - 1) * 15
             
         elif 'implant' in procedure.lower():
             # Implants: +45 min per additional implant
