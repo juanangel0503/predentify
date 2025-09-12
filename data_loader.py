@@ -133,64 +133,113 @@ class ProcedureDataLoader:
         performs = procedure_row.iloc[0].get(provider, 0)
         return bool(performs) if pd.notna(performs) else False
     
-    def calculate_teeth_surfaces_time(self, procedure: str, num_teeth: int = 1, 
-                                    num_surfaces: int = 1, num_quadrants: int = 1) -> Dict[str, float]:
-        """Calculate additional time based on number of teeth, surfaces, and quadrants"""
-        # More realistic time adjustments based on dental practice
-        time_adjustments = {
+    def calculate_teeth_surfaces_time(self, procedure: str, num_teeth: int, 
+                                    num_surfaces: int, num_quadrants: int) -> Dict[str, Any]:
+        """
+        Calculate time adjustments based on teeth, surfaces, and quadrants
+        Using EXACT formulas extracted from the Excel spreadsheet
+        Returns either adjustments or absolute overrides
+        """
+        result = {
             'assistant_time': 0,
             'doctor_time': 0,
-            'total_time': 0
+            'total_time': 0,
+            'is_absolute_override': False  # Flag to indicate if this should replace base times completely
         }
         
-        # Procedure-specific time calculations - IMPROVED ACCURACY
-        if 'filling' in procedure.lower():
-            # Fillings: +15 min per additional tooth, +10 min per additional surface
-            time_adjustments['assistant_time'] += (num_teeth - 1) * 5
-            time_adjustments['doctor_time'] += (num_teeth - 1) * 15
-            time_adjustments['total_time'] += (num_teeth - 1) * 20
-            
-            if num_surfaces > 1:
-                time_adjustments['assistant_time'] += (num_surfaces - 1) * 3
-                time_adjustments['doctor_time'] += (num_surfaces - 1) * 10
-                time_adjustments['total_time'] += (num_surfaces - 1) * 13
-                
-        elif 'crown' in procedure.lower():
-            # Crowns: +25 min per additional tooth
-            time_adjustments['assistant_time'] += (num_teeth - 1) * 8
-            time_adjustments['doctor_time'] += (num_teeth - 1) * 25
-            time_adjustments['total_time'] += (num_teeth - 1) * 33
-            
-        elif 'root canal' in procedure.lower():
-            # Root canals: +30 min per additional canal
-            time_adjustments['assistant_time'] += (num_surfaces - 1) * 8
-            time_adjustments['doctor_time'] += (num_surfaces - 1) * 30
-            time_adjustments['total_time'] += (num_surfaces - 1) * 38
-            
-        elif 'extraction' in procedure.lower():
-            # Extractions: +15 min per additional tooth (3 assistant + 12 doctor)
-            time_adjustments['assistant_time'] += (num_teeth - 1) * 3
-            time_adjustments['doctor_time'] += (num_teeth - 1) * 12
-            time_adjustments['total_time'] += (num_teeth - 1) * 15
-            
-        elif 'implant' in procedure.lower():
-            # Implants: +45 min per additional implant
-            time_adjustments['assistant_time'] += (num_teeth - 1) * 15
-            time_adjustments['doctor_time'] += (num_teeth - 1) * 45
-            time_adjustments['total_time'] += (num_teeth - 1) * 60
-            
-        # Quadrant-based adjustments (for procedures that span multiple quadrants)
-        if num_quadrants > 1:
-            quadrant_multiplier = 1 + (num_quadrants - 1) * 0.3  # 30% increase per additional quadrant
-            time_adjustments['assistant_time'] *= quadrant_multiplier
-            time_adjustments['doctor_time'] *= quadrant_multiplier
-            time_adjustments['total_time'] *= quadrant_multiplier
+        procedure_lower = procedure.lower()
         
-        return time_adjustments
+        # EXACT EXCEL FORMULAS IMPLEMENTATION - These calculate ABSOLUTE times, not adjustments
+        
+        if 'crown' in procedure_lower and 'delivery' not in procedure_lower:
+            # CROWN FORMULA (D2): =IF(OR(E2=0, E2=1), 90, 80 + (10*E2))
+            if num_teeth <= 1:
+                total_time = 90
+            else:
+                total_time = 80 + (10 * num_teeth)
+            
+            result['total_time'] = total_time
+            result['assistant_time'] = total_time * 0.11  # Based on your data: 10/90 = 11%
+            result['doctor_time'] = total_time * 0.89     # Based on your data: 80/90 = 89%
+            result['is_absolute_override'] = True
+            
+        elif 'filling' in procedure_lower:
+            # FILLING FORMULA (D3): Complex formula based on surfaces and quadrants
+            if num_surfaces <= 1:
+                total_time = 30
+            elif num_quadrants < 1:
+                total_time = (3 + 0.5 * num_surfaces) * 10
+            else:
+                total_time = (3 + 0.5 * num_surfaces + (num_quadrants - 1)) * 10
+                
+            result['total_time'] = total_time
+            result['assistant_time'] = total_time * 0.33  # Based on your data: 10/30 = 33%
+            result['doctor_time'] = total_time * 0.67     # Based on your data: 20/30 = 67%
+            result['is_absolute_override'] = True
+            
+        elif 'bridge' in procedure_lower:
+            # BRIDGE FORMULA (D4): =IF(OR(E2=0, E2=1), 90, 90 + ((E2-1)*30))
+            if num_teeth <= 1:
+                total_time = 90
+            else:
+                total_time = 90 + ((num_teeth - 1) * 30)
+                
+            result['total_time'] = total_time
+            result['assistant_time'] = total_time * 0.25  # Estimate: bridges are doctor-heavy
+            result['doctor_time'] = total_time * 0.75
+            result['is_absolute_override'] = True
+            
+        elif 'extraction' in procedure_lower:
+            # EXTRACTION FORMULA (D10): Complex formula
+            if num_teeth <= 1:
+                total_time = 50
+            elif num_teeth == 2 and num_quadrants <= 1:
+                total_time = 55
+            elif num_teeth == 2 and num_quadrants == 2:
+                total_time = 60
+            elif num_teeth >= 3 and num_quadrants <= 1:
+                total_time = 45 + (5 * num_teeth)
+            elif num_teeth >= 3 and num_quadrants >= 2:
+                total_time = 45 + (5 * num_teeth) + (5 * num_quadrants)
+            else:
+                total_time = 50  # fallback
+                
+            result['total_time'] = total_time
+            result['assistant_time'] = total_time * 0.2   # Based on your data: 10/50 = 20%
+            result['doctor_time'] = total_time * 0.8      # Based on your data: 40/50 = 80%
+            result['is_absolute_override'] = True
+            
+        elif 'root canal' in procedure_lower:
+            # ROOT CANAL FORMULA (D8): =IF(OR(F2=0, F2=1), 60, 60 + (F2-1)*10)
+            if num_surfaces <= 1:
+                total_time = 60
+            else:
+                total_time = 60 + ((num_surfaces - 1) * 10)
+                
+            result['total_time'] = total_time
+            result['assistant_time'] = total_time * 0.17  # Root canals are very doctor-heavy
+            result['doctor_time'] = total_time * 0.83
+            result['is_absolute_override'] = True
+            
+        elif 'implant' in procedure_lower and 'crown' not in procedure_lower:
+            # IMPLANT FORMULA (D9): =IF(OR(E2=0, E2=1), 70, 70 + (E2-1)*20)
+            if num_teeth <= 1:
+                total_time = 70
+            else:
+                total_time = 70 + ((num_teeth - 1) * 20)
+                
+            result['total_time'] = total_time
+            result['assistant_time'] = total_time * 0.33  # Based on your data: 30/90 ≈ 33%
+            result['doctor_time'] = total_time * 0.67     # Based on your data: 60/90 ≈ 67%
+            result['is_absolute_override'] = True
+        
+        # For other procedures, return no adjustments (use base times from Excel data)
+        return result
     
     def round_to_nearest_10(self, minutes: float) -> int:
-        """Round time to nearest 10 minutes (30, 40, 50, etc.)"""
-        return int(round(minutes / 10) * 10)
+        """Round time to nearest 10 minutes using Excel MROUND behavior (always rounds .5 up)"""
+        # Excel MROUND behavior - always rounds .5 away from zero (up for positive numbers)
+        return int((minutes + 5) // 10 * 10)
     
     def calculate_appointment_time(self, procedures: List[Dict], provider: str, 
                                  mitigating_factors: List[str] = None) -> Dict[str, Any]:
@@ -228,10 +277,17 @@ class ProcedureDataLoader:
             # Calculate teeth/surfaces/canals adjustments
             teeth_adjustments = self.calculate_teeth_surfaces_time(procedure, num_teeth, num_surfaces, num_quadrants)
             
-            # Calculate procedure time
-            proc_assistant_time = base_times['assistant_time'] + teeth_adjustments['assistant_time']
-            proc_doctor_time = base_times['doctor_time'] + teeth_adjustments['doctor_time']
-            proc_total_time = base_times['total_time'] + teeth_adjustments['total_time']
+            # Calculate procedure time - handle absolute overrides from Excel formulas
+            if teeth_adjustments.get('is_absolute_override', False):
+                # Use absolute times from Excel formulas
+                proc_assistant_time = teeth_adjustments['assistant_time']
+                proc_doctor_time = teeth_adjustments['doctor_time']
+                proc_total_time = teeth_adjustments['total_time']
+            else:
+                # Use base times + adjustments (traditional approach)
+                proc_assistant_time = base_times['assistant_time'] + teeth_adjustments['assistant_time']
+                proc_doctor_time = base_times['doctor_time'] + teeth_adjustments['doctor_time']
+                proc_total_time = base_times['total_time'] + teeth_adjustments['total_time']
             
             # Apply 30% reduction for 2nd+ procedures and round to nearest 10
             is_first_procedure = (idx == 0)
