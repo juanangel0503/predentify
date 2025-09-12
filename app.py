@@ -1,62 +1,44 @@
 from flask import Flask, render_template, request, jsonify, session
 from data_loader import ProcedureDataLoader
+from preauth.generator import PreAuthGenerator
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-here-change-in-production'  # Enable sessions
+app.secret_key = 'your-secret-key-here-change-in-production'
 
-# Initialize JSON-based data loader
+# Initialize data loader
 data_loader = ProcedureDataLoader('data')
-
-# Pre-Authorization Generator
-from preauth.generator import PreAuthGenerator
-preauth_generator = PreAuthGenerator()
 
 @app.route('/')
 def index():
-    """Main page with the appointment estimation form"""
+    """Main page for appointment time estimation"""
     procedures = data_loader.get_procedures()
     providers = data_loader.get_providers()
     mitigating_factors = data_loader.get_mitigating_factors()
     
     return render_template('index.html', 
                          procedures=procedures, 
-                         providers=providers,
+                         providers=providers, 
                          mitigating_factors=mitigating_factors)
 
 @app.route('/estimate', methods=['POST'])
 def estimate_time():
-    """Calculate appointment time based on selected parameters"""
+    """API endpoint to calculate appointment time"""
     try:
         data = request.get_json()
         provider = data.get('provider')
+        procedures = data.get('procedures', [])
         mitigating_factors = data.get('mitigating_factors', [])
-        procedures_data = data.get('procedures', [])
         
-        # Handle both single procedure (backward compatibility) and multiple procedures
-        if not procedures_data:
-            # Backward compatibility: single procedure
-            procedure = data.get('procedure')
-            num_teeth = int(data.get('num_teeth', 1))
-            num_surfaces = int(data.get('num_surfaces', 1))
-            num_quadrants = int(data.get('num_quadrants', 1))
-            
-            result = data_loader.calculate_single_appointment_time(
-                procedure=procedure,
-                provider=provider,
-                mitigating_factors=mitigating_factors,
-                num_teeth=num_teeth,
-                num_surfaces=num_surfaces,
-                num_quadrants=num_quadrants
-            )
-        else:
-            # Multiple procedures
-            result = data_loader.calculate_appointment_time(
-                procedures=procedures_data,
-                provider=provider,
-                mitigating_factors=mitigating_factors
-            )
+        if not provider or not procedures:
+            return jsonify({'error': 'Provider and procedures are required'}), 400
         
-        # Wrap result in success response format expected by frontend
+        # Calculate appointment time
+        result = data_loader.calculate_appointment_time(
+            procedures=procedures,
+            provider=provider,
+            mitigating_factors=mitigating_factors
+        )
+        
         return jsonify({
             'success': True,
             'procedures': result.get('procedure_details', []),
@@ -82,7 +64,8 @@ def get_procedures_for_provider(provider):
     compatible_procedures = []
     
     for procedure in all_procedures:
-        if data_loader.check_provider_performs_procedure(procedure, provider):
+        # FIXED: Correct parameter order - provider first, then procedure
+        if data_loader.check_provider_performs_procedure(provider, procedure):
             compatible_procedures.append(procedure)
     
     return jsonify(compatible_procedures)
@@ -94,133 +77,131 @@ def get_providers():
 
 @app.route('/api/providers/<procedure>')
 def get_providers_for_procedure(procedure):
-    """API endpoint to get providers that can perform a specific procedure"""
+    """API endpoint to get providers who can perform a specific procedure"""
     all_providers = data_loader.get_providers()
     compatible_providers = []
     
     for provider in all_providers:
-        if data_loader.check_provider_performs_procedure(procedure, provider):
+        # FIXED: Correct parameter order - provider first, then procedure
+        if data_loader.check_provider_performs_procedure(provider, procedure):
             compatible_providers.append(provider)
     
     return jsonify(compatible_providers)
 
 @app.route('/api/mitigating_factors')
 def get_mitigating_factors():
-    """API endpoint to get all mitigating factors"""
+    """API endpoint to get mitigating factors"""
     return jsonify(data_loader.get_mitigating_factors())
 
-# Pre-Authorization Generator routes
+# Pre-Authorization Generator Routes
 @app.route('/preauth')
 def preauth_index():
     """Pre-authorization generator main page"""
-    procedures = preauth_generator.get_supported_procedures()
-    insurers = preauth_generator.get_supported_insurers()
-    
-    return render_template('preauth/index.html', 
-                         procedures=procedures,
-                         insurers=insurers)
+    return render_template('preauth/index.html')
 
 @app.route('/preauth/generate', methods=['POST'])
 def generate_preauth():
-    """Generate pre-authorization from clinical text"""
+    """API endpoint to generate pre-authorization"""
     try:
         data = request.get_json()
         clinical_text = data.get('clinical_text', '')
-        procedure_type = data.get('procedure_type', '')
-        insurer_type = data.get('insurer_type', '')
+        procedure = data.get('procedure', '')
+        insurer = data.get('insurer', '')
         
-        if not all([clinical_text, procedure_type, insurer_type]):
-            return jsonify({
-                'success': False,
-                'error': 'Missing required fields: clinical_text, procedure_type, insurer_type'
-            }), 400
+        if not all([clinical_text, procedure, insurer]):
+            return jsonify({'error': 'Clinical text, procedure, and insurer are required'}), 400
         
-        result = preauth_generator.generate_preauth(clinical_text, procedure_type, insurer_type)
+        # Initialize pre-auth generator
+        preauth_generator = PreAuthGenerator()
         
-        # Convert result to dictionary for JSON serialization
-        response_data = {
-            'success': result.success,
-            'narrative': result.narrative,
-            'checklist': result.checklist,
-            'missing_info_prompts': result.missing_info_prompts,
-            'policy_flags': result.policy_flags,
-            'validation': {
-                'is_valid': result.validation.is_valid,
-                'missing_fields': result.validation.missing_fields,
-                'warnings': result.validation.warnings
-            }
+        # Generate pre-authorization
+        result = preauth_generator.generate_preauth(
+            clinical_text=clinical_text,
+            procedure=procedure,
+            insurer=insurer
+        )
+        
+        # Store case record in session (simplified for now)
+        # Note: In production, you'd want proper serialization for enums
+        session['current_case'] = {
+            'clinical_text': clinical_text,
+            'procedure': procedure,
+            'insurer': insurer,
+            'extracted_info': result.extracted_info.__dict__ if hasattr(result.extracted_info, '__dict__') else {}
         }
         
-        # Include case record for editing if successful
-        if result.success and result.case_record:
-            response_data['case_record_id'] = id(result.case_record)  # Simple ID for demo
-            # Note: Skipping session storage for now due to enum serialization issues
-            # In production, use proper storage with custom serialization
-        
-        return jsonify(response_data)
+        return jsonify({
+            'success': True,
+            'narrative': result.narrative,
+            'checklist': result.checklist,
+            'missing_prompts': result.missing_prompts,
+            'policy_flags': result.policy_flags,
+            'extracted_info': {
+                'procedure_type': result.extracted_info.procedure_type.value if hasattr(result.extracted_info.procedure_type, 'value') else str(result.extracted_info.procedure_type),
+                'insurer_type': result.extracted_info.insurer_type.value if hasattr(result.extracted_info.insurer_type, 'value') else str(result.extracted_info.insurer_type),
+                'clinical_findings': result.extracted_info.clinical_findings,
+                'artifacts': result.extracted_info.artifacts
+            }
+        })
     
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': f'Error generating pre-authorization: {str(e)}'
-        }), 500
+        return jsonify({'error': str(e)}), 400
 
 @app.route('/preauth/regenerate', methods=['POST'])
 def regenerate_preauth():
-    """Regenerate pre-authorization with edits"""
+    """API endpoint to regenerate pre-authorization after edits"""
     try:
         data = request.get_json()
-        case_record_id = data.get('case_record_id')
-        edits = data.get('edits', {})
+        clinical_text = data.get('clinical_text', '')
+        procedure = data.get('procedure', '')
+        insurer = data.get('insurer', '')
+        edited_info = data.get('edited_info', {})
         
-        if not case_record_id:
-            return jsonify({
-                'success': False,
-                'error': 'Missing case_record_id'
-            }), 400
+        if not all([clinical_text, procedure, insurer]):
+            return jsonify({'error': 'Clinical text, procedure, and insurer are required'}), 400
         
-        # Retrieve case record from session (in production, use proper storage)
-        case_record = session.get(f'case_record_{case_record_id}')
+        # Initialize pre-auth generator
+        preauth_generator = PreAuthGenerator()
         
-        if not case_record:
-            return jsonify({
-                'success': False,
-                'error': 'Case record not found'
-            }), 404
+        # Regenerate pre-authorization with edited info
+        result = preauth_generator.regenerate_preauth(
+            clinical_text=clinical_text,
+            procedure=procedure,
+            insurer=insurer,
+            edited_info=edited_info
+        )
         
-        result = preauth_generator.regenerate_with_edits(case_record, edits)
-        
-        # Convert result to dictionary
-        response_data = {
-            'success': result.success,
+        return jsonify({
+            'success': True,
             'narrative': result.narrative,
             'checklist': result.checklist,
-            'missing_info_prompts': result.missing_info_prompts,
-            'policy_flags': result.policy_flags,
-            'validation': {
-                'is_valid': result.validation.is_valid,
-                'missing_fields': result.validation.missing_fields,
-                'warnings': result.validation.warnings
-            }
-        }
-        
-        return jsonify(response_data)
+            'missing_prompts': result.missing_prompts,
+            'policy_flags': result.policy_flags
+        })
     
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': f'Error regenerating pre-authorization: {str(e)}'
-        }), 500
+        return jsonify({'error': str(e)}), 400
 
 @app.route('/api/preauth/procedures')
 def get_preauth_procedures():
-    """API endpoint to get supported procedures"""
-    return jsonify(preauth_generator.get_supported_procedures())
+    """API endpoint to get procedures for pre-authorization"""
+    # Return procedures that typically require pre-authorization
+    preauth_procedures = [
+        'Crown preparation',
+        'Bridge',
+        'Implant surgery',
+        'Orthodontic treatment',
+        'Additional scaling units',
+        'Onlay',
+        'Veneer'
+    ]
+    return jsonify(preauth_procedures)
 
 @app.route('/api/preauth/insurers')
 def get_preauth_insurers():
     """API endpoint to get supported insurers"""
-    return jsonify(preauth_generator.get_supported_insurers())
+    insurers = ['CDCP', 'Private (Generic Template)']
+    return jsonify(insurers)
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0')
