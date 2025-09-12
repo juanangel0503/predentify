@@ -183,9 +183,7 @@ class ProcedureDataLoader:
         """
         Calculate appointment time using EXCEL FORMULA LOGIC
         
-        FIXED: Doctor time now uses Excel formula logic (base doctor time from Metadata2)
-        Assistant time uses base assistant time from Metadata2
-        Total time gets adjusted for teeth/surfaces/quadrants
+        FIXED: Crown procedure now uses 25 min per additional tooth (matches spreadsheet)
         """
         if mitigating_factors is None:
             mitigating_factors = []
@@ -224,6 +222,12 @@ class ProcedureDataLoader:
                     surface_adjustment = (num_surfaces - 1) * 5
                     adjusted_total += surface_adjustment
                 
+            elif procedure == 'Crown':
+                # Crown: Base time + 25 minutes per additional tooth (FIXED)
+                if num_teeth > 1:
+                    teeth_adjustment = (num_teeth - 1) * 25
+                    adjusted_total += teeth_adjustment
+                
             elif procedure == 'Crown Preparation':
                 if num_teeth > 1:
                     teeth_adjustment = (num_teeth - 1) * 15
@@ -257,7 +261,7 @@ class ProcedureDataLoader:
             
             # Add to totals
             total_base_assistant_time += base_assistant
-            total_base_doctor_time += excel_doctor_time  # Use Excel formula logic
+            total_base_doctor_time += excel_doctor_time  # Use Excel formula result
             total_adjusted_time += adjusted_total
             
             # Store procedure details
