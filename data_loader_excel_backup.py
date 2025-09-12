@@ -1,74 +1,126 @@
 """
 Data loader that matches the Excel calculation formulas exactly
 """
-import json
-import math
-import os
+import pandas as pd
+import numpy as np
 from typing import List, Dict, Any, Optional
+import math
 
 class ProcedureDataLoader:
-    """Handles loading and processing procedure duration data from JSON files"""
+    """Loads and processes procedure data to match Excel calculations exactly"""
     
-    def __init__(self, data_directory: str = 'data'):
-        """Initialize the loader with JSON data files"""
-        self.data_dir = data_directory
-        self.procedures_data = {}
-        self.mitigating_factors = []
-        self.provider_compatibility = {}
-        self.providers = []
-        
-        # Load all JSON data
+    def __init__(self, excel_path: str):
+        self.excel_path = excel_path
+        self.df = None
+        self.metadata1_df = None
+        self.metadata2_df = None
         self.load_data()
     
     def load_data(self):
-        """Load all data from JSON files"""
+        """Load data from Excel file"""
         try:
-            # Load procedures data
-            with open(os.path.join(self.data_dir, 'procedures.json'), 'r') as f:
-                self.procedures_data = json.load(f)
+            # Load Metadata2 sheet (main procedure data)
+            self.metadata2_df = pd.read_excel(self.excel_path, sheet_name='Metadata2')
             
-            # Load mitigating factors
-            with open(os.path.join(self.data_dir, 'mitigating_factors.json'), 'r') as f:
-                self.mitigating_factors = json.load(f)
+            # Load Metadata1 sheet (lookup values)
+            self.metadata1_df = pd.read_excel(self.excel_path, sheet_name='Metadata1')
             
-            # Load provider compatibility
-            with open(os.path.join(self.data_dir, 'provider_compatibility.json'), 'r') as f:
-                self.provider_compatibility = json.load(f)
+            print(f"Loaded {len(self.metadata2_df)} procedures from {self.excel_path}")
             
-            # Extract unique providers from compatibility data
-            all_providers = set()
-            for providers_list in self.provider_compatibility.values():
-                all_providers.update(providers_list)
-            self.providers = sorted(list(all_providers))
-            
-            print(f"Loaded {len(self.procedures_data)} procedures from JSON data")
-            
-        except FileNotFoundError as e:
-            print(f"Error loading JSON data: {e}")
-            print("Please ensure JSON data files exist in the data/ directory")
+        except Exception as e:
+            print(f"Error loading data: {e}")
             raise
     
     def get_procedures(self) -> List[str]:
         """Get list of all available procedures"""
-        return sorted(list(self.procedures_data.keys()))
+        procedures = []
+        
+        # Get Procedure 1 procedures
+        proc1_procedures = self.metadata2_df['Procedure 1'].dropna().tolist()
+        procedures.extend(proc1_procedures)
+        
+        # Get Procedure 2 procedures
+        proc2_procedures = self.metadata2_df['Procedure 2'].dropna().tolist()
+        procedures.extend(proc2_procedures)
+        
+        # Remove duplicates and return
+        return list(set(procedures))
     
     def get_providers(self) -> List[str]:
         """Get list of all providers"""
-        return self.providers
+        return ['Miekella', 'Kayla', 'Radin', 'Marina', 'Monse', 'Jessica', 'Amber', 'Kym', 'Natalia', 'Hygiene']
     
     def get_mitigating_factors(self) -> List[Dict[str, Any]]:
-        """Get list of all mitigating factors"""
-        return self.mitigating_factors
+        """Get list of mitigating factors with their values"""
+        factors = []
+        
+        # Get mitigating factors from Metadata2
+        mitigating_data = self.metadata2_df[['Mitigating Factor', 'Duration or Multiplier']].dropna()
+        
+        for _, row in mitigating_data.iterrows():
+            factor_name = row['Mitigating Factor']
+            value = row['Duration or Multiplier']
+            
+            factors.append({
+                'name': factor_name,
+                'value': value,
+                'multiplier': value,
+                'is_multiplier': value <= 2.0  # Values <= 2 are multipliers, > 2 are additive
+            })
+        
+        return factors
     
     def get_procedure_base_times(self, procedure: str) -> Dict[str, float]:
-        """Get base times for a procedure (JSON lookup)"""
+        """Get base times for a procedure (matches Excel XLOOKUP logic)"""
         
-        if procedure in self.procedures_data:
-            proc_data = self.procedures_data[procedure]
+        # Look in Procedure 1 section first
+        proc1_match = self.metadata2_df[self.metadata2_df['Procedure 1'] == procedure]
+        
+        if not proc1_match.empty:
+            row = proc1_match.iloc[0]
+            assistant_time = row['Assistant/Hygienist Time']
+            doctor_time = row['Doctor Time']
+            total_time = row['Duration Total']
+            
+            # Handle NaN values - replace with 0
+            assistant_time = 0.0 if pd.isna(assistant_time) else float(assistant_time)
+            total_time = 0.0 if pd.isna(total_time) else float(total_time)
+            
+            # If Doctor Time is NaN, calculate it as Total - Assistant
+            if pd.isna(doctor_time):
+                doctor_time = max(0.0, total_time - assistant_time)
+            else:
+                doctor_time = float(doctor_time)
+            
             return {
-                'assistant_time': proc_data['assistant_time'],
-                'doctor_time': proc_data['doctor_time'],
-                'total_time': proc_data['total_time']
+                'assistant_time': assistant_time,
+                'doctor_time': doctor_time,
+                'total_time': total_time
+            }
+        
+        # Look in Procedure 2 section
+        proc2_match = self.metadata2_df[self.metadata2_df['Procedure 2'] == procedure]
+        
+        if not proc2_match.empty:
+            row = proc2_match.iloc[0]
+            assistant_time = row['Assistant/Hygienist Time.1']
+            doctor_time = row['Doctor Time.1']
+            total_time = row['Duration']
+            
+            # Handle NaN values - replace with 0
+            assistant_time = 0.0 if pd.isna(assistant_time) else float(assistant_time)
+            total_time = 0.0 if pd.isna(total_time) else float(total_time)
+            
+            # If Doctor Time is NaN, calculate it as Total - Assistant
+            if pd.isna(doctor_time):
+                doctor_time = max(0.0, total_time - assistant_time)
+            else:
+                doctor_time = float(doctor_time)
+            
+            return {
+                'assistant_time': assistant_time,
+                'doctor_time': doctor_time,
+                'total_time': total_time
             }
         
         # Procedure not found
@@ -79,13 +131,23 @@ class ProcedureDataLoader:
         }
     
     def check_provider_performs_procedure(self, procedure: str, provider: str) -> bool:
-        """Check if a provider can perform a specific procedure"""
+        """Check if provider performs the procedure (matches Excel logic)"""
         
-        if procedure in self.provider_compatibility:
-            return provider in self.provider_compatibility[procedure]
+        # Look in Procedure 1 section
+        proc1_match = self.metadata2_df[self.metadata2_df['Procedure 1'] == procedure]
+        if not proc1_match.empty and provider in self.metadata2_df.columns:
+            value = proc1_match.iloc[0][provider]
+            if not pd.isna(value) and value == 1:
+                return True
         
-        # If no compatibility data, assume all providers can do it
-        return True
+        # Look in Procedure 2 section
+        proc2_match = self.metadata2_df[self.metadata2_df['Procedure 2'] == procedure]
+        if not proc2_match.empty and provider in self.metadata2_df.columns:
+            value = proc2_match.iloc[0][provider]
+            if not pd.isna(value) and value == 1:
+                return True
+        
+        return False
     
     def round_to_nearest_10(self, minutes: float) -> int:
         """Round time to the nearest 10 minutes (matches Excel MROUND function exactly)
@@ -95,9 +157,10 @@ class ProcedureDataLoader:
         
         Handles NaN values by returning 0.
         """
+        import math
         
         # Handle NaN values
-        if math.isnan(minutes):
+        if pd.isna(minutes) or math.isnan(minutes):
             return 0
             
         # Handle negative values

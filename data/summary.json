@@ -1,0 +1,8 @@
+{
+  "total_procedures": 30,
+  "total_mitigating_factors": 10,
+  "total_providers": 9,
+  "procedures_with_provider_compatibility": 37,
+  "extraction_date": "2025-09-12",
+  "source_file": "VDH_Procedure_Durations_rev0.1.xlsx"
+}

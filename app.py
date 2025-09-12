@@ -1,13 +1,11 @@
 from flask import Flask, render_template, request, jsonify, session
-import pandas as pd
-import numpy as np
 from data_loader import ProcedureDataLoader
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here-change-in-production'  # Enable sessions
 
-# Initialize data loader
-data_loader = ProcedureDataLoader('VDH_Procedure_Durations_rev0.1.xlsx')
+# Initialize JSON-based data loader
+data_loader = ProcedureDataLoader('data')
 
 # Pre-Authorization Generator
 from preauth.generator import PreAuthGenerator

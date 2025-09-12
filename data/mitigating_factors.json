@@ -1,0 +1,62 @@
+[
+  {
+    "name": "Special Needs ",
+    "value": 10.0,
+    "multiplier": 10.0,
+    "is_multiplier": false
+  },
+  {
+    "name": "Language Barrier ",
+    "value": 10.0,
+    "multiplier": 10.0,
+    "is_multiplier": false
+  },
+  {
+    "name": "PITA ",
+    "value": 10.0,
+    "multiplier": 10.0,
+    "is_multiplier": false
+  },
+  {
+    "name": "TLC ",
+    "value": 10.0,
+    "multiplier": 10.0,
+    "is_multiplier": false
+  },
+  {
+    "name": "Extra Freezing Required ",
+    "value": 10.0,
+    "multiplier": 10.0,
+    "is_multiplier": false
+  },
+  {
+    "name": "Limited Opening / TMJ Issues ",
+    "value": 10.0,
+    "multiplier": 10.0,
+    "is_multiplier": false
+  },
+  {
+    "name": "Cosmetic Case (Anterior crown or Veneer) ",
+    "value": 10.0,
+    "multiplier": 10.0,
+    "is_multiplier": false
+  },
+  {
+    "name": "Provider Learning Curve",
+    "value": 1.15,
+    "multiplier": 1.15,
+    "is_multiplier": true
+  },
+  {
+    "name": "Assistant Unfamiliarity",
+    "value": 1.1,
+    "multiplier": 1.1,
+    "is_multiplier": true
+  },
+  {
+    "name": "Need for Informed Consent or Discussion",
+    "value": 10.0,
+    "multiplier": 10.0,
+    "is_multiplier": false
+  }
+]
