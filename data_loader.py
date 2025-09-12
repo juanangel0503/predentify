@@ -149,20 +149,50 @@ class ProcedureDataLoader:
         # Use math.floor and add 0.5 to get "round half away from zero" behavior
         return int(math.floor(minutes / 10 + 0.5) * 10)
 
+    def _calculate_doctor_time_excel_logic(self, procedure: str) -> float:
+        """
+        Calculate doctor time using Excel formula logic:
+        =IF(B2<>"",IF(AND(XLOOKUP(B2,Metadata2!A:A,Metadata2!B:B,0)="",XLOOKUP(B2,Metadata2!A:A,Metadata2!C:C,0)=""),0,IF(XLOOKUP(B2,Metadata2!A:A,Metadata2!C:C,0)="",0,XLOOKUP(B2,Metadata2!A:A,Metadata2!C:C,0))),0)
+        """
+        if not procedure or procedure == "":
+            return 0.0
+            
+        # Get base times from Metadata2 equivalent (our procedures_data)
+        base_times = self.get_procedure_base_times(procedure)
+        assistant_time = base_times['assistant_time']
+        doctor_time = base_times['doctor_time']
+        
+        # Excel logic:
+        # IF both Assistant Time and Doctor Time are empty (""): return 0
+        # ELSE IF Doctor Time is empty (""): return 0  
+        # ELSE: return Doctor Time
+        
+        # In our case, "empty" means 0 or NaN
+        assistant_empty = (assistant_time == 0.0 or math.isnan(assistant_time))
+        doctor_empty = (doctor_time == 0.0 or math.isnan(doctor_time))
+        
+        if assistant_empty and doctor_empty:
+            return 0.0
+        elif doctor_empty:
+            return 0.0
+        else:
+            return doctor_time
+
     def calculate_appointment_time(self, procedures: List[Dict], provider: str, 
                                  mitigating_factors: List[str] = None) -> Dict[str, Any]:
         """
-        Calculate appointment time using NEW SPREADSHEET LOGIC (rev0.2)
-        Based on the updated VDH_Procedure_Durations_rev0.2.xlsx
+        Calculate appointment time using EXCEL FORMULA LOGIC
         
-        FIXED: Assistant time should be BASE time from Metadata2, not adjusted
-        Total time should be adjusted, Doctor time = Total - Assistant
+        FIXED: Doctor time now uses Excel formula logic (base doctor time from Metadata2)
+        Assistant time uses base assistant time from Metadata2
+        Total time gets adjusted for teeth/surfaces/quadrants
         """
         if mitigating_factors is None:
             mitigating_factors = []
             
-        total_base_assistant_time = 0.0  # Sum of base assistant times (not adjusted)
-        total_adjusted_time = 0.0        # Sum of adjusted total times
+        total_base_assistant_time = 0.0
+        total_base_doctor_time = 0.0  # Sum of base doctor times (Excel formula logic)
+        total_adjusted_time = 0.0
         procedure_details = []
         
         for proc_data in procedures:
@@ -171,48 +201,45 @@ class ProcedureDataLoader:
             num_surfaces = int(proc_data.get('num_surfaces', 1))
             num_quadrants = int(proc_data.get('num_quadrants', 1))
             
-            # Get base times from procedure data
+            # Get base times from procedure data (Metadata2 equivalent)
             base_times = self.get_procedure_base_times(procedure)
             base_assistant = base_times['assistant_time']
             base_doctor = base_times['doctor_time']
             base_total = base_times['total_time']
+            
+            # Calculate doctor time using Excel formula logic
+            excel_doctor_time = self._calculate_doctor_time_excel_logic(procedure)
             
             # Start with base total time
             adjusted_total = base_total
             
             # Apply teeth/surfaces/quadrants adjustments to TOTAL TIME ONLY
             if procedure == 'Implant':
-                # Implant: Base time + 10 minutes per additional tooth
                 if num_teeth > 1:
                     teeth_adjustment = (num_teeth - 1) * 10
                     adjusted_total += teeth_adjustment
                 
             elif procedure == 'Filling':
-                # Filling: Base time + 5 minutes per additional surface
                 if num_surfaces > 1:
                     surface_adjustment = (num_surfaces - 1) * 5
                     adjusted_total += surface_adjustment
                 
             elif procedure == 'Crown Preparation':
-                # Crown Preparation: Base time + 15 minutes per additional tooth
                 if num_teeth > 1:
                     teeth_adjustment = (num_teeth - 1) * 15
                     adjusted_total += teeth_adjustment
                 
             elif procedure == 'Crown Delivery':
-                # Crown Delivery: Base time + 5 minutes per additional tooth
                 if num_teeth > 1:
                     teeth_adjustment = (num_teeth - 1) * 5
                     adjusted_total += teeth_adjustment
                 
             elif procedure == 'Root Canal':
-                # Root Canal: Base time + 10 minutes per additional surface
                 if num_surfaces > 1:
                     surface_adjustment = (num_surfaces - 1) * 10
                     adjusted_total += surface_adjustment
                 
             elif procedure == 'Extraction':
-                # Extraction: Base time + 5 minutes per additional tooth
                 if num_teeth > 1:
                     teeth_adjustment = (num_teeth - 1) * 5
                     adjusted_total += teeth_adjustment
@@ -220,18 +247,17 @@ class ProcedureDataLoader:
             else:
                 # For other procedures, use base times with simple teeth adjustment
                 if num_teeth > 1:
-                    # Simple adjustment: add 5 minutes per additional tooth
                     teeth_adjustment = (num_teeth - 1) * 5
                     adjusted_total += teeth_adjustment
             
             # Apply 30% reduction for 2nd+ procedures
-            procedure_index = len(procedure_details)  # 0-based index
-            if procedure_index > 0:  # 2nd procedure and beyond (index 1, 2, 3...)
-                # Reduce by 30%
+            procedure_index = len(procedure_details)
+            if procedure_index > 0:
                 adjusted_total = adjusted_total * 0.7
             
             # Add to totals
-            total_base_assistant_time += base_assistant  # Always use base assistant time
+            total_base_assistant_time += base_assistant
+            total_base_doctor_time += excel_doctor_time  # Use Excel formula logic
             total_adjusted_time += adjusted_total
             
             # Store procedure details
@@ -246,8 +272,8 @@ class ProcedureDataLoader:
                     'total_time': base_total
                 },
                 'adjusted_times': {
-                    'assistant_time': base_assistant,  # Assistant time stays the same
-                    'doctor_time': adjusted_total - base_assistant,  # Doctor = Total - Assistant
+                    'assistant_time': base_assistant,
+                    'doctor_time': excel_doctor_time,  # Use Excel formula result
                     'total_time': adjusted_total
                 }
             })
@@ -274,7 +300,7 @@ class ProcedureDataLoader:
         
         # Calculate final times BEFORE rounding
         final_assistant_time = total_base_assistant_time
-        final_doctor_time = final_total_time - final_assistant_time
+        final_doctor_time = total_base_doctor_time  # Use Excel formula result
         
         # Round all times
         final_assistant_time_rounded = self.round_to_nearest_10(final_assistant_time)
@@ -284,7 +310,7 @@ class ProcedureDataLoader:
         return {
             'base_times': {
                 'assistant_time': self.round_to_nearest_10(total_base_assistant_time),
-                'doctor_time': self.round_to_nearest_10(total_adjusted_time - total_base_assistant_time),
+                'doctor_time': self.round_to_nearest_10(total_base_doctor_time),
                 'total_time': self.round_to_nearest_10(total_adjusted_time)
             },
             'final_times': {
