@@ -183,7 +183,7 @@ class ProcedureDataLoader:
         """
         Calculate appointment time using EXCEL FORMULA LOGIC
         
-        FIXED: Crown procedure now uses 25 min per additional tooth (matches spreadsheet)
+        FIXED: All Crown procedures now use correct adjustment formulas
         """
         if mitigating_factors is None:
             mitigating_factors = []
@@ -223,19 +223,21 @@ class ProcedureDataLoader:
                     adjusted_total += surface_adjustment
                 
             elif procedure == 'Crown':
-                # Crown: Base time + 25 minutes per additional tooth (FIXED)
+                # Crown: Base time + 30 minutes per additional tooth (FIXED)
                 if num_teeth > 1:
-                    teeth_adjustment = (num_teeth - 1) * 25
+                    teeth_adjustment = (num_teeth - 1) * 30
                     adjusted_total += teeth_adjustment
                 
             elif procedure == 'Crown Preparation':
+                # Crown Preparation: Base time + 30 minutes per additional tooth (FIXED)
                 if num_teeth > 1:
-                    teeth_adjustment = (num_teeth - 1) * 15
+                    teeth_adjustment = (num_teeth - 1) * 30
                     adjusted_total += teeth_adjustment
                 
             elif procedure == 'Crown Delivery':
+                # Crown Delivery: Base time + 10 minutes per additional tooth (FIXED)
                 if num_teeth > 1:
-                    teeth_adjustment = (num_teeth - 1) * 5
+                    teeth_adjustment = (num_teeth - 1) * 10
                     adjusted_total += teeth_adjustment
                 
             elif procedure == 'Root Canal':
