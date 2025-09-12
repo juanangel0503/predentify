@@ -130,14 +130,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const surfacesLabel = item.querySelector('.surfaces-label');
             const canalsLabel = item.querySelector('.canals-label');
             
+            // Check if elements exist before accessing their properties
+            if (!procedureSelect || !teethInput || !quadrantsInput || !surfacesInput) {
+                return; // Skip this item if elements don't exist
+            }
+            
             const procedure = procedureSelect.value;
             const teeth = parseInt(teethInput.value) || 1;
             
             // Reset all field visibility
             quadrantsInput.style.display = 'none';
             surfacesInput.style.display = 'none';
-            surfacesLabel.style.display = 'none';
-            canalsLabel.style.display = 'none';
+            if (surfacesLabel) surfacesLabel.style.display = 'none';
+            if (canalsLabel) canalsLabel.style.display = 'none';
             
             // Show quadrants only if more than one tooth
             if (teeth > 1) {
@@ -147,13 +152,13 @@ document.addEventListener('DOMContentLoaded', function() {
             // Show surfaces only for fillings
             if (procedure === 'Filling') {
                 surfacesInput.style.display = 'block';
-                surfacesLabel.style.display = 'block';
+                if (surfacesLabel) surfacesLabel.style.display = 'block';
             }
             
             // Show canals only for root canals
             if (procedure === 'Root Canal') {
                 surfacesInput.style.display = 'block';
-                canalsLabel.style.display = 'block';
+                if (canalsLabel) canalsLabel.style.display = 'block';
             }
         });
     }
@@ -215,11 +220,16 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        updateFieldVisibility();
+        // Only update field visibility if we have procedure items
+        if (document.querySelectorAll('.procedure-item').length > 0) {
+            updateFieldVisibility();
+        }
     }
 
     function populateProviderDropdown(providers) {
         const providerSelect = document.getElementById('provider');
+        if (!providerSelect) return; // Exit if provider select doesn't exist
+        
         const currentValue = providerSelect.value;
         
         // Clear and repopulate options
@@ -452,17 +462,19 @@ document.addEventListener('DOMContentLoaded', function() {
     function scheduleAutoCalculate() {
         clearTimeout(autoCalculateTimeout);
         autoCalculateTimeout = setTimeout(() => {
-            if (providerSelect.value && document.querySelector('.procedure-select').value) {
+            if (providerSelect && providerSelect.value && document.querySelector('.procedure-select') && document.querySelector('.procedure-select').value) {
                 calculateAppointmentTime();
             }
         }, 500);
     }
 
     // Add event listeners for auto-calculation and bidirectional filtering
-    providerSelect.addEventListener('change', function() {
-        updateProcedureOptions(this.value);
-        scheduleAutoCalculate();
-    });
+    if (providerSelect) {
+        providerSelect.addEventListener('change', function() {
+            updateProcedureOptions(this.value);
+            scheduleAutoCalculate();
+        });
+    }
 
     // Add event listeners for checkboxes
     document.querySelectorAll('input[name="mitigating_factors"]').forEach(checkbox => {
@@ -483,8 +495,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Initialize procedure options (load all procedures initially)
         updateProcedureOptions('');
         
-        // Initialize field visibility
-        updateFieldVisibility();
+        // Initialize field visibility only if we have procedure items
+        if (document.querySelectorAll('.procedure-item').length > 0) {
+            updateFieldVisibility();
+        }
     }).catch(error => {
         console.error('Error loading initial data:', error);
     });
