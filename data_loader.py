@@ -140,10 +140,14 @@ class ProcedureDataLoader:
         return True  # Default to True if no compatibility data
 
     def round_to_nearest_10(self, minutes: float) -> int:
-        """Round to nearest 10 minutes (Excel MROUND behavior)"""
+        """Round to nearest 10 minutes (Excel MROUND behavior) - FIXED"""
         if math.isnan(minutes) or minutes < 0:
             return 0
-        return int(round(minutes / 10) * 10)
+        
+        # Excel MROUND behavior: round to nearest multiple of 10
+        # For values exactly halfway (like 105), round up
+        # Use math.floor and add 0.5 to get "round half away from zero" behavior
+        return int(math.floor(minutes / 10 + 0.5) * 10)
 
     def calculate_appointment_time(self, procedures: List[Dict], provider: str, 
                                  mitigating_factors: List[str] = None) -> Dict[str, Any]:
@@ -151,8 +155,7 @@ class ProcedureDataLoader:
         Calculate appointment time using NEW SPREADSHEET LOGIC (rev0.2)
         Based on the updated VDH_Procedure_Durations_rev0.2.xlsx
         
-        NEW LOGIC: The spreadsheet has assistant_time + doctor_time != total_time
-        This suggests the total_time includes additional overhead/prep time
+        FIXED: Proper rounding logic to match Excel behavior
         """
         if mitigating_factors is None:
             mitigating_factors = []
@@ -201,8 +204,8 @@ class ProcedureDataLoader:
                     # Distribute adjustment: 100% to assistant (fillings are assistant-heavy)
                     adjusted_assistant += surface_adjustment
                 
-            elif procedure == 'Crown':
-                # Crown: Base time + 15 minutes per additional tooth
+            elif procedure == 'Crown Preparation':
+                # Crown Preparation: Base time + 15 minutes per additional tooth
                 if num_teeth > 1:
                     teeth_adjustment = (num_teeth - 1) * 15
                     adjusted_total += teeth_adjustment
@@ -261,7 +264,7 @@ class ProcedureDataLoader:
             total_doctor_time += adjusted_doctor
             total_overhead_time += adjusted_overhead
             
-            # Store procedure details
+            # Store procedure details (don't round here)
             procedure_details.append({
                 'procedure': procedure,
                 'num_teeth': num_teeth,
@@ -321,10 +324,26 @@ class ProcedureDataLoader:
                     "multiplier": value
                 })
         
-        # Final rounding
+        # FIXED: Round the total time first, then distribute proportionally
+        final_total_time_rounded = self.round_to_nearest_10(final_total_time)
+        
+        # Distribute the rounded total proportionally
+        if final_total_time > 0:
+            assistant_ratio = final_assistant_time / final_total_time
+            doctor_ratio = final_doctor_time / final_total_time
+            overhead_ratio = final_overhead_time / final_total_time
+            
+            final_assistant_time = final_total_time_rounded * assistant_ratio
+            final_doctor_time = final_total_time_rounded * doctor_ratio
+            final_overhead_time = final_total_time_rounded * overhead_ratio
+        else:
+            final_assistant_time = 0
+            final_doctor_time = 0
+            final_overhead_time = 0
+        
+        # Round individual components
         final_assistant_time = self.round_to_nearest_10(final_assistant_time)
         final_doctor_time = self.round_to_nearest_10(final_doctor_time)
-        final_total_time = self.round_to_nearest_10(final_total_time)
         
         return {
             'base_times': {
@@ -335,7 +354,7 @@ class ProcedureDataLoader:
             'final_times': {
                 'assistant_time': final_assistant_time,
                 'doctor_time': final_doctor_time,
-                'total_time': final_total_time
+                'total_time': final_total_time_rounded
             },
             'procedure_details': procedure_details,
             'applied_factors': applied_factors,
