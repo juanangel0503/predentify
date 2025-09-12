@@ -86,7 +86,7 @@ class ProcedureDataLoader:
             base_total = base_times['total_time']
             
             # Apply EXACT Excel formulas from Cal.xlsx formula report
-            if procedure == 'Implant':
+            if procedure == 'Implant surgery':
                 if num_teeth == 0 or num_teeth == 1:
                     adjusted_total = 90
                 else:
@@ -100,7 +100,7 @@ class ProcedureDataLoader:
                     adjusted_assistant = base_assistant
                     adjusted_doctor = base_doctor
                 
-            elif procedure == 'Crown':
+            elif procedure == 'Crown preparation':
                 if num_teeth == 0 or num_teeth == 1:
                     adjusted_total = 90
                 else:
@@ -197,6 +197,14 @@ class ProcedureDataLoader:
             adjusted_assistant = self.round_to_nearest_10(adjusted_assistant)
             adjusted_doctor = self.round_to_nearest_10(adjusted_doctor)
             adjusted_total = self.round_to_nearest_10(adjusted_total)
+            
+            # Apply 30% reduction for 2nd+ procedures
+            procedure_index = len(procedure_details)  # 0-based index
+            if procedure_index > 0:  # 2nd procedure and beyond (index 1, 2, 3...)
+                # Reduce by 30% and round to nearest 10
+                adjusted_assistant = self.round_to_nearest_10(adjusted_assistant * 0.7)
+                adjusted_doctor = self.round_to_nearest_10(adjusted_doctor * 0.7)
+                adjusted_total = adjusted_assistant + adjusted_doctor
             
             # Add to totals
             total_assistant_time += adjusted_assistant

@@ -92,6 +92,18 @@ def get_providers():
     """API endpoint to get all providers"""
     return jsonify(data_loader.get_providers())
 
+@app.route('/api/providers/<procedure>')
+def get_providers_for_procedure(procedure):
+    """API endpoint to get providers that can perform a specific procedure"""
+    all_providers = data_loader.get_providers()
+    compatible_providers = []
+    
+    for provider in all_providers:
+        if data_loader.check_provider_performs_procedure(procedure, provider):
+            compatible_providers.append(provider)
+    
+    return jsonify(compatible_providers)
+
 @app.route('/api/mitigating_factors')
 def get_mitigating_factors():
     """API endpoint to get all mitigating factors"""
