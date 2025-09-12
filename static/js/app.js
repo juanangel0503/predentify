@@ -15,6 +15,41 @@ document.addEventListener('DOMContentLoaded', function() {
     let autoCalculateTimeout;
     let isAutoCalculating = false;
 
+    // Procedures that should NOT show detail prompts (teeth, quadrants, surfaces/canals)
+    const excludedFromDetailPrompts = [
+        'Appliance Adjustment',
+        'Bite Adjustment', 
+        'Botox',
+        'CBCT',
+        'Consultation',
+        'Crown',
+        'Re-cement',
+        'Emergency Exam',
+        'Happy Visit',
+        'Hygiene',
+        'Implant Follow-Up',
+        'In-Office Whitening',
+        'Invisalign Complete',
+        'Invisalign Insert',
+        'Invisalign Insert 2',
+        'Invisalign Recall',
+        'Kids Hygiene',
+        'Kids Hygiene 0–2',
+        'Kids Hygiene 3–7',
+        'Kids Hygiene 8–11',
+        'Laser Bacterial Reduction',
+        'Laser Desensitization',
+        'New Patient Exam',
+        'Night Guard Insert',
+        'Post-op Exam',
+        'Re-evaluation',
+        'Polish and Fluoride',
+        'Recall Exam',
+        'SDF Application',
+        'Sedation Specific Exam',
+        'Surgical Debridement'
+    ];
+
     // Handle form submission
     form.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -201,7 +236,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Update field visibility based on procedure type and teeth count
+    // Enhanced field visibility with exclusion list
     function updateFieldVisibility() {
         document.querySelectorAll('.procedure-item').forEach(item => {
             const procedureSelect = item.querySelector('.procedure-select');
@@ -219,7 +254,35 @@ document.addEventListener('DOMContentLoaded', function() {
             const procedure = procedureSelect.value;
             const teeth = parseInt(teethInput.value) || 1;
             
-            // Reset all field visibility
+            // Check if procedure is in exclusion list
+            const isExcluded = excludedFromDetailPrompts.includes(procedure);
+            
+            if (isExcluded) {
+                // Hide all detail fields for excluded procedures
+                teethInput.style.display = 'none';
+                quadrantsInput.style.display = 'none';
+                surfacesInput.style.display = 'none';
+                if (surfacesLabel) surfacesLabel.style.display = 'none';
+                if (canalsLabel) canalsLabel.style.display = 'none';
+                
+                // Hide the teeth label as well
+                const teethLabel = item.querySelector('label[for*="num_teeth"]');
+                if (teethLabel) {
+                    teethLabel.style.display = 'none';
+                }
+                
+                console.log(`Procedure "${procedure}" is excluded from detail prompts - hiding all detail fields`);
+                return;
+            } else {
+                // Show teeth field for non-excluded procedures
+                teethInput.style.display = 'block';
+                const teethLabel = item.querySelector('label[for*="num_teeth"]');
+                if (teethLabel) {
+                    teethLabel.style.display = 'block';
+                }
+            }
+            
+            // Reset other field visibility
             quadrantsInput.style.display = 'none';
             surfacesInput.style.display = 'none';
             if (surfacesLabel) surfacesLabel.style.display = 'none';
@@ -412,24 +475,38 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             const procedure = procedureSelect.value;
-            const numTeeth = parseInt(teethInput.value) || 1;
-            const numQuadrants = parseInt(quadrantsInput.value) || 1;
-            const numSurfaces = parseInt(surfacesInput.value) || 1;
+            const isExcluded = excludedFromDetailPrompts.includes(procedure);
             
-            console.log(`Procedure ${index} data:`, {
-                procedure: procedure,
-                numTeeth: numTeeth,
-                numQuadrants: numQuadrants,
-                numSurfaces: numSurfaces
-            });
-            
-            if (procedure) {
+            if (isExcluded) {
+                // For excluded procedures, use default values
                 procedures.push({
                     procedure: procedure,
-                    num_teeth: numTeeth,
-                    num_quadrants: numQuadrants,
-                    num_surfaces: numSurfaces
+                    num_teeth: 1,
+                    num_quadrants: 1,
+                    num_surfaces: 1
                 });
+                console.log(`Procedure "${procedure}" is excluded - using default values`);
+            } else {
+                // For regular procedures, collect actual values
+                const numTeeth = parseInt(teethInput.value) || 1;
+                const numQuadrants = parseInt(quadrantsInput.value) || 1;
+                const numSurfaces = parseInt(surfacesInput.value) || 1;
+                
+                console.log(`Procedure ${index} data:`, {
+                    procedure: procedure,
+                    numTeeth: numTeeth,
+                    numQuadrants: numQuadrants,
+                    numSurfaces: numSurfaces
+                });
+                
+                if (procedure) {
+                    procedures.push({
+                        procedure: procedure,
+                        num_teeth: numTeeth,
+                        num_quadrants: numQuadrants,
+                        num_surfaces: numSurfaces
+                    });
+                }
             }
         });
         
@@ -544,28 +621,52 @@ document.addEventListener('DOMContentLoaded', function() {
             procedures.forEach((proc, index) => {
                 const isFirst = index === 0;
                 const adjustment = isFirst ? '' : ' (30% reduction applied)';
+                const isExcluded = excludedFromDetailPrompts.includes(proc.procedure);
+                
+                if (isExcluded) {
+                    html += `
+                        <div class="mb-2">
+                            <small class="text-muted">
+                                <strong>${proc.procedure}${adjustment}:</strong> Standard procedure
+                            </small>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="mb-2">
+                            <small class="text-muted">
+                                <strong>${proc.procedure}${adjustment}:</strong> ${proc.num_teeth} tooth${proc.num_teeth > 1 ? 's' : ''}, 
+                                ${proc.num_quadrants} quadrant${proc.num_quadrants > 1 ? 's' : ''}, 
+                                ${proc.num_surfaces} surface${proc.num_surfaces > 1 ? 's' : ''}/canal${proc.num_surfaces > 1 ? 's' : ''}
+                            </small>
+                        </div>
+                    `;
+                }
+            });
+            html += '</div>';
+        } else {
+            const proc = procedures[0];
+            const isExcluded = excludedFromDetailPrompts.includes(proc.procedure);
+            
+            if (isExcluded) {
                 html += `
                     <div class="mb-2">
                         <small class="text-muted">
-                            <strong>${proc.procedure}${adjustment}:</strong> ${proc.num_teeth} tooth${proc.num_teeth > 1 ? 's' : ''}, 
+                            <strong>Details:</strong> Standard procedure
+                        </small>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="mb-2">
+                        <small class="text-muted">
+                            <strong>Details:</strong> ${proc.num_teeth} tooth${proc.num_teeth > 1 ? 's' : ''}, 
                             ${proc.num_quadrants} quadrant${proc.num_quadrants > 1 ? 's' : ''}, 
                             ${proc.num_surfaces} surface${proc.num_surfaces > 1 ? 's' : ''}/canal${proc.num_surfaces > 1 ? 's' : ''}
                         </small>
                     </div>
                 `;
-            });
-            html += '</div>';
-        } else {
-            const proc = procedures[0];
-            html += `
-                <div class="mb-2">
-                    <small class="text-muted">
-                        <strong>Details:</strong> ${proc.num_teeth} tooth${proc.num_teeth > 1 ? 's' : ''}, 
-                        ${proc.num_quadrants} quadrant${proc.num_quadrants > 1 ? 's' : ''}, 
-                        ${proc.num_surfaces} surface${proc.num_surfaces > 1 ? 's' : ''}/canal${proc.num_surfaces > 1 ? 's' : ''}
-                    </small>
-                </div>
-            `;
+            }
         }
         
         html += `
