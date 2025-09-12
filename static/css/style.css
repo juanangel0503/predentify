@@ -197,3 +197,123 @@ header {
 .warning-state {
     border-left: 4px solid #ffc107;
 } 
+/* Multiple procedures styling */
+.procedure-item {
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.procedure-item:hover {
+    background-color: #e9ecef;
+    transform: translateY(-1px);
+}
+
+.procedure-item .form-select,
+.procedure-item .form-control {
+    font-size: 0.9rem;
+}
+
+.remove-procedure {
+    transition: all 0.3s ease;
+}
+
+.remove-procedure:hover {
+    transform: scale(1.1);
+}
+
+/* Procedure details in results */
+.procedure-details {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 10px 0;
+}
+
+/* Time breakdown improvements */
+.time-breakdown {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 15px 0;
+    border: 2px solid #dee2e6;
+}
+
+.time-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #dee2e6;
+    transition: background-color 0.3s ease;
+}
+
+.time-item:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+    border-radius: 5px;
+    margin: 0 -10px;
+    padding: 12px 10px;
+}
+
+.time-item:last-child {
+    border-bottom: none;
+    font-weight: bold;
+    font-size: 1.2rem;
+    background-color: rgba(0, 123, 255, 0.1);
+    border-radius: 5px;
+    margin: 0 -10px;
+    padding: 12px 10px;
+}
+
+.time-value {
+    font-weight: 600;
+    color: #007bff;
+    font-size: 1.1rem;
+}
+
+.time-item:last-child .time-value {
+    font-size: 1.3rem;
+    color: #0056b3;
+}
+
+/* Applied factors improvements */
+.applied-factors {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 15px;
+}
+
+.factor-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #ffeaa7;
+}
+
+.factor-item:last-child {
+    border-bottom: none;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .procedure-item .col-md-2,
+    .procedure-item .col-md-4 {
+        margin-bottom: 10px;
+    }
+    
+    .time-breakdown {
+        padding: 15px;
+    }
+    
+    .time-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .time-value {
+        align-self: flex-end;
+    }
+}

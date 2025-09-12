@@ -25,24 +25,33 @@ def estimate_time():
     """Calculate appointment time based on selected parameters"""
     try:
         data = request.get_json()
-        procedure = data.get('procedure')
         provider = data.get('provider')
         mitigating_factors = data.get('mitigating_factors', [])
+        procedures_data = data.get('procedures', [])
         
-        # Get teeth/surfaces/canals parameters
-        num_teeth = int(data.get('num_teeth', 1))
-        num_surfaces = int(data.get('num_surfaces', 1))
-        num_quadrants = int(data.get('num_quadrants', 1))
-        
-        # Get base times
-        result = data_loader.calculate_appointment_time(
-            procedure=procedure,
-            provider=provider,
-            mitigating_factors=mitigating_factors,
-            num_teeth=num_teeth,
-            num_surfaces=num_surfaces,
-            num_quadrants=num_quadrants
-        )
+        # Handle both single procedure (backward compatibility) and multiple procedures
+        if not procedures_data:
+            # Backward compatibility: single procedure
+            procedure = data.get('procedure')
+            num_teeth = int(data.get('num_teeth', 1))
+            num_surfaces = int(data.get('num_surfaces', 1))
+            num_quadrants = int(data.get('num_quadrants', 1))
+            
+            result = data_loader.calculate_single_appointment_time(
+                procedure=procedure,
+                provider=provider,
+                mitigating_factors=mitigating_factors,
+                num_teeth=num_teeth,
+                num_surfaces=num_surfaces,
+                num_quadrants=num_quadrants
+            )
+        else:
+            # Multiple procedures
+            result = data_loader.calculate_appointment_time(
+                procedures=procedures_data,
+                provider=provider,
+                mitigating_factors=mitigating_factors
+            )
         
         return jsonify(result)
     
