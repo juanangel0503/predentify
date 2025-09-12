@@ -49,22 +49,21 @@ class ProcedureDataLoader:
             }
         return {'assistant_time': 0.0, 'doctor_time': 0.0, 'total_time': 0.0}
 
-    def check_provider_performs_procedure(self, procedure: str, provider: str) -> bool:
+    def check_provider_performs_procedure(self, provider: str, procedure: str) -> bool:
         if procedure in self.provider_compatibility:
             return provider in self.provider_compatibility[procedure]
-        return True  # Default to true if no specific compatibility data
+        return True  # Default to True if no compatibility data
 
     def round_to_nearest_10(self, minutes: float) -> int:
-        if math.isnan(minutes):
+        """Round to nearest 10 minutes (Excel MROUND behavior)"""
+        if math.isnan(minutes) or minutes < 0:
             return 0
-        if minutes < 0:
-            return 0
-        return int(math.floor(minutes / 10 + 0.5) * 10)
+        return int(round(minutes / 10) * 10)
 
     def calculate_appointment_time(self, procedures: List[Dict], provider: str, 
                                  mitigating_factors: List[str] = None) -> Dict[str, Any]:
         """
-        Calculate appointment time using EXACT Excel formulas from Cal.xlsx formula report
+        Calculate appointment time using CORRECTED formulas for assistant and doctor times
         """
         if mitigating_factors is None:
             mitigating_factors = []
@@ -85,100 +84,113 @@ class ProcedureDataLoader:
             base_doctor = base_times['doctor_time']
             base_total = base_times['total_time']
             
-            # Apply EXACT Excel formulas from Cal.xlsx formula report
+            # Calculate assistant and doctor times using CORRECTED formulas
             if procedure == 'Implant surgery':
                 if num_teeth == 0 or num_teeth == 1:
+                    # Base case: 90 minutes total
                     adjusted_total = 90
+                    # Assistant time: 30% of total (27 min), Doctor time: 70% of total (63 min)
+                    adjusted_assistant = 27
+                    adjusted_doctor = 63
                 else:
+                    # Multiple teeth: 80 + (10 * num_teeth)
                     adjusted_total = 80 + (10 * num_teeth)
-                # Keep assistant/doctor ratio from base
-                if base_total > 0:
-                    ratio = adjusted_total / base_total
-                    adjusted_assistant = base_assistant * ratio
-                    adjusted_doctor = base_doctor * ratio
-                else:
-                    adjusted_assistant = base_assistant
-                    adjusted_doctor = base_doctor
+                    # Assistant time: 30% of total, Doctor time: 70% of total
+                    adjusted_assistant = adjusted_total * 0.3
+                    adjusted_doctor = adjusted_total * 0.7
                 
             elif procedure == 'Crown preparation':
                 if num_teeth == 0 or num_teeth == 1:
+                    # Base case: 90 minutes total
                     adjusted_total = 90
+                    # Assistant time: 10% of total (9 min), Doctor time: 90% of total (81 min)
+                    adjusted_assistant = 9
+                    adjusted_doctor = 81
                 else:
+                    # Multiple teeth: 90 + ((num_teeth - 1) * 30)
                     adjusted_total = 90 + ((num_teeth - 1) * 30)
-                # Keep assistant/doctor ratio from base
-                if base_total > 0:
-                    ratio = adjusted_total / base_total
-                    adjusted_assistant = base_assistant * ratio
-                    adjusted_doctor = base_doctor * ratio
-                else:
-                    adjusted_assistant = base_assistant
-                    adjusted_doctor = base_doctor
+                    # Assistant time: 10% of total, Doctor time: 90% of total
+                    adjusted_assistant = adjusted_total * 0.1
+                    adjusted_doctor = adjusted_total * 0.9
                 
             elif procedure == 'Crown Delivery':
                 if num_teeth == 0 or num_teeth == 1:
+                    # Base case: 40 minutes total
                     adjusted_total = 40
+                    # Assistant time: 25% of total (10 min), Doctor time: 75% of total (30 min)
+                    adjusted_assistant = 10
+                    adjusted_doctor = 30
                 else:
+                    # Multiple teeth: 40 + ((num_teeth - 1) * 10)
                     adjusted_total = 40 + ((num_teeth - 1) * 10)
-                # Keep assistant/doctor ratio from base
-                if base_total > 0:
-                    ratio = adjusted_total / base_total
-                    adjusted_assistant = base_assistant * ratio
-                    adjusted_doctor = base_doctor * ratio
-                else:
-                    adjusted_assistant = base_assistant
-                    adjusted_doctor = base_doctor
+                    # Assistant time: 25% of total, Doctor time: 75% of total
+                    adjusted_assistant = adjusted_total * 0.25
+                    adjusted_doctor = adjusted_total * 0.75
                 
             elif procedure == 'Extraction':
                 if num_teeth == 0 or num_teeth == 1:
+                    # Base case: 50 minutes total
                     adjusted_total = 50
+                    # Assistant time: 20% of total (10 min), Doctor time: 80% of total (40 min)
+                    adjusted_assistant = 10
+                    adjusted_doctor = 40
                 elif num_teeth == 2 and (num_quadrants == 0 or num_quadrants == 1):
+                    # 2 teeth, 1 quadrant: 55 minutes total
                     adjusted_total = 55
+                    adjusted_assistant = 11  # 20% of total
+                    adjusted_doctor = 44     # 80% of total
                 elif num_teeth == 2 and num_quadrants == 2:
+                    # 2 teeth, 2 quadrants: 60 minutes total
                     adjusted_total = 60
+                    adjusted_assistant = 12  # 20% of total
+                    adjusted_doctor = 48     # 80% of total
                 elif num_teeth >= 3 and num_quadrants <= 1:
+                    # 3+ teeth, 1 quadrant: 45 + (5 * num_teeth)
                     adjusted_total = 45 + (5 * num_teeth)
+                    adjusted_assistant = adjusted_total * 0.2  # 20% of total
+                    adjusted_doctor = adjusted_total * 0.8     # 80% of total
                 elif num_teeth >= 3 and num_quadrants >= 2:
+                    # 3+ teeth, 2+ quadrants: 45 + (5 * num_teeth) + (5 * num_quadrants)
                     adjusted_total = 45 + (5 * num_teeth) + (5 * num_quadrants)
+                    adjusted_assistant = adjusted_total * 0.2  # 20% of total
+                    adjusted_doctor = adjusted_total * 0.8     # 80% of total
                 else:
-                    adjusted_total = base_total  # fallback
-                # Keep assistant/doctor ratio from base
-                if base_total > 0:
-                    ratio = adjusted_total / base_total
-                    adjusted_assistant = base_assistant * ratio
-                    adjusted_doctor = base_doctor * ratio
-                else:
+                    # Fallback to base times
+                    adjusted_total = base_total
                     adjusted_assistant = base_assistant
                     adjusted_doctor = base_doctor
                 
             elif procedure == 'Root Canal':
                 if num_surfaces == 0 or num_surfaces == 1:
+                    # Base case: 60 minutes total
                     adjusted_total = 60
+                    # Assistant time: 33% of total (20 min), Doctor time: 67% of total (40 min)
+                    adjusted_assistant = 20
+                    adjusted_doctor = 40
                 else:
+                    # Multiple surfaces: 60 + (num_surfaces - 1) * 10
                     adjusted_total = 60 + (num_surfaces - 1) * 10
-                # Keep assistant/doctor ratio from base
-                if base_total > 0:
-                    ratio = adjusted_total / base_total
-                    adjusted_assistant = base_assistant * ratio
-                    adjusted_doctor = base_doctor * ratio
-                else:
-                    adjusted_assistant = base_assistant
-                    adjusted_doctor = base_doctor
+                    # Assistant time: 33% of total, Doctor time: 67% of total
+                    adjusted_assistant = adjusted_total * (20/60)  # 33.33%
+                    adjusted_doctor = adjusted_total * (40/60)     # 66.67%
                 
             elif procedure == 'Filling':
                 if num_surfaces == 0 or num_surfaces == 1:
+                    # Base case: 30 minutes total
                     adjusted_total = 30
+                    # Assistant time: 0% of total (0 min), Doctor time: 100% of total (30 min)
+                    adjusted_assistant = 0
+                    adjusted_doctor = 30
                 elif num_quadrants < 1:
+                    # Formula: (3 + 0.5 * num_surfaces) * 10
                     adjusted_total = (3 + 0.5 * num_surfaces) * 10
+                    adjusted_assistant = 0  # Fillings are typically doctor-only
+                    adjusted_doctor = adjusted_total
                 else:
+                    # Formula: (3 + 0.5 * num_surfaces + (num_quadrants - 1)) * 10
                     adjusted_total = (3 + 0.5 * num_surfaces + (num_quadrants - 1)) * 10
-                # Keep assistant/doctor ratio from base
-                if base_total > 0:
-                    ratio = adjusted_total / base_total
-                    adjusted_assistant = base_assistant * ratio
-                    adjusted_doctor = base_doctor * ratio
-                else:
-                    adjusted_assistant = base_assistant
-                    adjusted_doctor = base_doctor
+                    adjusted_assistant = 0  # Fillings are typically doctor-only
+                    adjusted_doctor = adjusted_total
                 
             else:
                 # For other procedures, use base times with simple teeth adjustment
@@ -186,8 +198,15 @@ class ProcedureDataLoader:
                     # Simple adjustment: add 10 minutes per additional tooth
                     teeth_adjustment = (num_teeth - 1) * 10
                     adjusted_total = base_total + teeth_adjustment
-                    adjusted_assistant = base_assistant + (teeth_adjustment * 0.3)  # 30% to assistant
-                    adjusted_doctor = base_doctor + (teeth_adjustment * 0.7)  # 70% to doctor
+                    # Distribute adjustment based on base ratio
+                    if base_total > 0:
+                        assistant_ratio = base_assistant / base_total
+                        doctor_ratio = base_doctor / base_total
+                        adjusted_assistant = base_assistant + (teeth_adjustment * assistant_ratio)
+                        adjusted_doctor = base_doctor + (teeth_adjustment * doctor_ratio)
+                    else:
+                        adjusted_assistant = base_assistant
+                        adjusted_doctor = base_doctor
                 else:
                     adjusted_total = base_total
                     adjusted_assistant = base_assistant
