@@ -238,11 +238,5 @@
     "doctor_time": 0.0,
     "total_time": 80.0,
     "section": "procedure1"
-  },
-  "Crown": {
-    "assistant_time": 10.0,
-    "doctor_time": 0.0,
-    "total_time": 90.0,
-    "section": "General"
   }
 }
