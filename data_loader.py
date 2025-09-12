@@ -219,10 +219,13 @@ class ProcedureDataLoader:
                 else:
                     total_multiplier *= multiplier
         
-        # Calculate final times
-        final_assistant_time = assistant_time * total_multiplier + additional_time
+        # Calculate final times - FIXED LOGIC
+        # Apply multipliers first, then add additional time
+        final_assistant_time = (assistant_time * total_multiplier) + additional_time
         final_doctor_time = doctor_time * total_multiplier
-        final_total_time = total_base_time * total_multiplier + additional_time
+        
+        # Total time should be the sum of assistant + doctor time
+        final_total_time = final_assistant_time + final_doctor_time
         
         return {
             'success': True,
@@ -232,17 +235,21 @@ class ProcedureDataLoader:
             'num_surfaces': num_surfaces,
             'num_quadrants': num_quadrants,
             'base_times': {
-                'assistant_time': base_times['assistant_time'],
-                'doctor_time': base_times['doctor_time'],
-                'total_time': base_times['total_time']
+                'assistant_time': int(round(base_times['assistant_time'])),
+                'doctor_time': int(round(base_times['doctor_time'])),
+                'total_time': int(round(base_times['total_time']))
             },
-            'teeth_adjustments': teeth_adjustments,
+            'teeth_adjustments': {
+                'assistant_time': int(round(teeth_adjustments['assistant_time'])),
+                'doctor_time': int(round(teeth_adjustments['doctor_time'])),
+                'total_time': int(round(teeth_adjustments['total_time']))
+            },
             'final_times': {
-                'assistant_time': round(final_assistant_time, 1),
-                'doctor_time': round(final_doctor_time, 1),
-                'total_time': round(final_total_time, 1)
+                'assistant_time': int(round(final_assistant_time)),
+                'doctor_time': int(round(final_doctor_time)),
+                'total_time': int(round(final_total_time))
             },
             'applied_factors': applied_factors,
             'total_multiplier': round(total_multiplier, 2),
-            'additional_time': round(additional_time, 1)
+            'additional_time': int(round(additional_time))
         }
