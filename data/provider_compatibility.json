@@ -3,12 +3,7 @@
     "Dr. Miekella"
   ],
   "Filling": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin",
-    "Amber",
-    "Kym",
-    "Natalia"
+    "Dr. Miekella"
   ],
   "Crown Preparation": [
     "Dr. Miekella",
@@ -143,9 +138,6 @@
     "Dr. Radin"
   ],
   "Sedation": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin",
     "Marina",
     "Monse",
     "Jessica",
@@ -261,6 +253,52 @@
     "Dr. Miekella"
   ],
   "Socket Preservation": [
+    "Dr. Miekella",
+    "Dr. Kayla",
+    "Dr. Radin"
+  ],
+  "Sinus Lift": [
+    "Dr. Miekella"
+  ],
+  "Bone Graft": [
+    "Dr. Miekella",
+    "Dr. Kayla",
+    "Dr. Radin",
+    "Amber",
+    "Kym",
+    "Natalia"
+  ],
+  "Root Canal Treated Tooth": [
+    "Dr. Miekella",
+    "Dr. Kayla",
+    "Dr. Radin",
+    "Marina",
+    "Monse",
+    "Jessica",
+    "Amber",
+    "Kym",
+    "Natalia"
+  ],
+  "Post": [
+    "Dr. Miekella",
+    "Dr. Kayla",
+    "Dr. Radin",
+    "Marina",
+    "Monse",
+    "Jessica",
+    "Amber",
+    "Kym",
+    "Natalia"
+  ],
+  "Core & Crown Prep": [
+    "Marina",
+    "Monse",
+    "Jessica",
+    "Amber",
+    "Kym",
+    "Natalia"
+  ],
+  "Pulp Cap": [
     "Dr. Miekella",
     "Dr. Kayla",
     "Dr. Radin"
