@@ -769,7 +769,7 @@ document.addEventListener('DOMContentLoaded', function() {
         showLoading(true);
         
         Promise.all([
-            fetch('/api/procedure1').then(response => {
+            fetch('/api/procedures').then(response => {
                 if (!response.ok) {
                     throw new Error(`Failed to load procedures: ${response.status}`);
                 }
