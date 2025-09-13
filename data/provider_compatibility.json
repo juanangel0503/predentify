@@ -1,24 +1,24 @@
 {
   "Implant surgery": [
-    "Miekella"
+    "Dr. Miekella"
   ],
   "Filling": [
-    "Miekella",
-    "Kayla",
-    "Radin",
+    "Dr. Miekella",
+    "Dr. Kayla",
+    "Dr. Radin",
     "Amber",
     "Kym",
     "Natalia"
   ],
   "Crown Preparation": [
-    "Miekella",
-    "Kayla",
-    "Radin"
+    "Dr. Miekella",
+    "Dr. Kayla",
+    "Dr. Radin"
   ],
   "Crown Delivery": [
-    "Miekella",
-    "Kayla",
-    "Radin",
+    "Dr. Miekella",
+    "Dr. Kayla",
+    "Dr. Radin",
     "Marina",
     "Monse",
     "Jessica",
@@ -27,9 +27,9 @@
     "Natalia"
   ],
   "Implant Crown Impression": [
-    "Miekella",
-    "Kayla",
-    "Radin",
+    "Dr. Miekella",
+    "Dr. Kayla",
+    "Dr. Radin",
     "Marina",
     "Monse",
     "Jessica",
@@ -46,17 +46,17 @@
     "Natalia"
   ],
   "Root Canal": [
-    "Miekella",
-    "Kayla",
-    "Radin"
+    "Dr. Miekella",
+    "Dr. Kayla",
+    "Dr. Radin"
   ],
   "Gum Graft": [
-    "Miekella"
+    "Dr. Miekella"
   ],
   "Extraction": [
-    "Miekella",
-    "Kayla",
-    "Radin"
+    "Dr. Miekella",
+    "Dr. Kayla",
+    "Dr. Radin"
   ],
   "Invisalign Insert 1": [
     "Marina",
@@ -67,9 +67,9 @@
     "Natalia"
   ],
   "Invisalign Insert 2": [
-    "Miekella",
-    "Kayla",
-    "Radin"
+    "Dr. Miekella",
+    "Dr. Kayla",
+    "Dr. Radin"
   ],
   "Invisalign Recall": [
     "Marina",
@@ -80,9 +80,9 @@
     "Natalia"
   ],
   "Invisalign Complete": [
-    "Miekella",
-    "Kayla",
-    "Radin",
+    "Dr. Miekella",
+    "Dr. Kayla",
+    "Dr. Radin",
     "Marina",
     "Monse",
     "Jessica"
@@ -110,9 +110,9 @@
     "Hygiene"
   ],
   "New Patient Exam": [
-    "Miekella",
-    "Kayla",
-    "Radin",
+    "Dr. Miekella",
+    "Dr. Kayla",
+    "Dr. Radin",
     "Marina",
     "Monse",
     "Jessica",
@@ -138,14 +138,14 @@
     "Natalia"
   ],
   "Pulpectomy": [
-    "Miekella",
-    "Kayla",
-    "Radin"
+    "Dr. Miekella",
+    "Dr. Kayla",
+    "Dr. Radin"
   ],
   "Sedation": [
-    "Miekella",
-    "Kayla",
-    "Radin",
+    "Dr. Miekella",
+    "Dr. Kayla",
+    "Dr. Radin",
     "Marina",
     "Monse",
     "Jessica",
@@ -258,6 +258,6 @@
     "Natalia"
   ],
   "Surgical Debridement": [
-    "Miekella"
+    "Dr. Miekella"
   ]
 }

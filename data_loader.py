@@ -22,11 +22,18 @@ class ProcedureDataLoader:
             with open(os.path.join(self.data_dir, 'provider_compatibility.json'), 'r') as f:
                 self.provider_compatibility = json.load(f)
             
-            # Build list of all providers
+            # Build list of all providers with doctors at the top
             all_providers = set()
             for providers_list in self.provider_compatibility.values():
                 all_providers.update(providers_list)
-            self.providers = sorted(list(all_providers))
+            
+            # Sort providers with doctors first, then alphabetically
+            all_providers_list = list(all_providers)
+            doctors = ['Dr. Miekella', 'Dr. Kayla', 'Dr. Radin']
+            other_providers = [p for p in all_providers_list if p not in doctors]
+            
+            # Put doctors at the top, then sort the rest alphabetically
+            self.providers = doctors + sorted(other_providers)
             
             # Filter to only available procedures
             self.available_procedures = self._filter_available_procedures()
@@ -89,7 +96,7 @@ class ProcedureDataLoader:
         return self.available_procedures
 
     def get_providers(self) -> List[str]:
-        """Get list of all providers"""
+        """Get list of all providers with doctors at the top"""
         return self.providers
 
     def get_mitigating_factors(self) -> List[Dict]:
