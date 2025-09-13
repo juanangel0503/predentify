@@ -112,12 +112,20 @@ document.addEventListener('DOMContentLoaded', function() {
         scheduleAutoCalculate();
     }
 
+    // FIXED: Always return all available procedures for new rows
     function getProcedureOptions() {
-        const firstSelect = document.querySelector('.procedure-select');
-        if (firstSelect) {
-            return firstSelect.innerHTML;
+        if (allProcedures.length === 0) {
+            console.warn('No procedures loaded yet, returning empty options');
+            return '';
         }
-        return '';
+        
+        let options = '';
+        allProcedures.forEach(procedure => {
+            options += `<option value="${procedure}">${procedure}</option>`;
+        });
+        
+        console.log(`🔄 Adding new procedure row with ${allProcedures.length} available procedures`);
+        return options;
     }
 
     function updateRemoveButtons() {
@@ -359,6 +367,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.json();
             })
             .then(procedures => {
+                // FIXED: Only filter existing procedure dropdowns, not new ones
                 populateProcedureDropdowns(procedures);
                 return procedures;
             })
@@ -417,6 +426,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loadProvidersForProcedure(procedure);
     }
 
+    // FIXED: Enhanced procedure dropdown population with better logic
     function populateProcedureDropdowns(procedures) {
         const procedureSelects = document.querySelectorAll('.procedure-select');
         
@@ -447,6 +457,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (document.querySelectorAll('.procedure-item').length > 0) {
             updateFieldVisibility();
         }
+        
+        console.log(`🔄 Updated ${procedureSelects.length} procedure dropdowns with ${procedures.length} procedures`);
     }
 
     function populateProviderDropdown(providers) {
