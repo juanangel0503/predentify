@@ -62,14 +62,14 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function addProcedureRow() {
+        // For additional procedures (2nd, 3rd, etc.), use Procedure 2 procedures
         const procedureHtml = `
             <div class="procedure-item border rounded p-3 mb-3">
                 <div class="row align-items-end">
                     <div class="col-md-4">
-                        <label class="form-label small">Procedure</label>
+                        <label class="form-label small">Procedure 2</label>
                         <select class="form-select procedure-select" name="procedures[${procedureCount}][procedure]" required>
                             <option value="">Select procedure...</option>
-                            ${getProcedureOptions()}
                         </select>
                     </div>
                     <div class="col-md-2">
@@ -122,7 +122,60 @@ document.addEventListener('DOMContentLoaded', function() {
         let options = '';
         allProcedures.forEach(procedure => {
             options += `<option value="${procedure}">${procedure}</option>`;
+        
+    function loadProcedure2ForProcedure1AndProvider(procedure1, provider) {
+            console.log('Missing procedure1 or provider for Procedure 2 loading');
+            return Promise.resolve([]);
+        }
+        
+        console.log(`Loading Procedure 2 for: ${procedure1} + ${provider}`);
+        
+        return fetch(`/api/procedure2/${encodeURIComponent(procedure1)}/${encodeURIComponent(provider)}`)
+            .then(response => {
+                    throw new Error(`Failed to load procedure2: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(procedure2List => {
+                console.log(`Found ${procedure2List.length} Procedure 2 procedures for ${procedure1} + ${provider}:`, procedure2List);
+                return procedure2List;
+            })
+            .catch(error => {
+                console.error('Error loading Procedure 2 procedures:', error);
+                return [];
+            });
+    }
+
+    function updateProcedure2Options(procedure1, provider) {
+            console.log('Cannot update Procedure 2 options: missing procedure1 or provider');
+            return;
+        }
+        
+        // Find all Procedure 2 dropdowns and update them
+        document.querySelectorAll('.procedure-item').forEach((item, index) => {
+            if (index > 0) { // Skip the first procedure (Procedure 1)
+                const procedureSelect = item.querySelector('.procedure-select');
+                if (procedureSelect) {
+                    loadProcedure2ForProcedure1AndProvider(procedure1, provider)
+                        .then(procedure2List => {
+                            // Clear existing options except the first one
+                            procedureSelect.innerHTML = '<option value="">Select procedure...</option>';
+                            
+                            // Add Procedure 2 options
+                            procedure2List.forEach(proc2 => {
+                                const option = document.createElement('option');
+                                option.value = proc2;
+                                option.textContent = proc2;
+                                procedureSelect.appendChild(option);
+                            });
+                            
+                            console.log(`Updated Procedure 2 dropdown ${index} with ${procedure2List.length} options`);
+                        });
+                }
+            }
         });
+    }
+});
         
         console.log(`🔄 Adding new procedure row with ${allProcedures.length} available procedures`);
         return options;
@@ -204,6 +257,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateProviderOptions(this.value);
                 // NEW: Reset form fields when procedure changes
                 resetFormFields();
+                // NEW: Update Procedure 2 options if this is the first procedure
+                const providerSelect = document.getElementById('provider');
+                if (this.closest('.procedure-item') === document.querySelector('.procedure-item') && providerSelect.value) {
+                    updateProcedure2Options(this.value, providerSelect.value);
+                }
                 scheduleAutoCalculate();
             });
         });
@@ -526,13 +584,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             const procedure = procedureSelect.value;
-            
-            // FIXED: Skip empty procedure selections
-            if (!procedure || procedure.trim() === '') {
-                console.log(`Skipping procedure item ${index}: empty procedure selection`);
-                return; // Skip this item
-            }
-            
             const isExcluded = excludedFromDetailPrompts.includes(procedure);
             
             if (isExcluded) {
@@ -749,6 +800,11 @@ document.addEventListener('DOMContentLoaded', function() {
             updateProcedureOptions(this.value);
             // NEW: Reset form fields when provider changes
             resetFormFields();
+            // NEW: Update Procedure 2 options based on first procedure and new provider
+            const firstProcedure = document.querySelector('.procedure-select').value;
+            if (firstProcedure) {
+                updateProcedure2Options(firstProcedure, this.value);
+            }
             scheduleAutoCalculate();
         });
     }
