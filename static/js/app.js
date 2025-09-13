@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
         'Botox',
         'CBCT',
         'Consultation',
+        'Crown',
         'Re-cement',
         'Emergency Exam',
         'Happy Visit',
@@ -167,11 +168,12 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
-        // Procedure selection changes - with auto-calculation
+        // Procedure selection changes - with auto-calculation and provider filtering
         document.querySelectorAll('.procedure-select').forEach(select => {
             select.addEventListener('change', function() {
                 updateFieldVisibility();
-                updateProviderOptions();
+                // FIXED: Pass the selected procedure value to updateProviderOptions
+                updateProviderOptions(this.value);
                 scheduleAutoCalculate();
             });
         });
@@ -366,6 +368,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.warn('Data not loaded yet, skipping procedure update');
             return;
         }
+        console.log('🔄 Updating procedure options for provider:', provider);
         loadProceduresForProvider(provider);
     }
 
@@ -374,6 +377,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.warn('Data not loaded yet, skipping provider update');
             return;
         }
+        console.log('🔄 Updating provider options for procedure:', procedure);
         loadProvidersForProcedure(procedure);
     }
 
@@ -498,46 +502,29 @@ document.addEventListener('DOMContentLoaded', function() {
                     numSurfaces: numSurfaces
                 });
                 
-                if (procedure) {
-                    procedures.push({
-                        procedure: procedure,
-                        num_teeth: numTeeth,
-                        num_quadrants: numQuadrants,
-                        num_surfaces: numSurfaces
-                    });
-                }
+                procedures.push({
+                    procedure: procedure,
+                    num_teeth: numTeeth,
+                    num_quadrants: numQuadrants,
+                    num_surfaces: numSurfaces
+                });
             }
         });
         
-        console.log('Collected procedures:', procedures);
-        
-        // Collect mitigating factors
-        const mitigatingFactors = [];
-        document.querySelectorAll('input[name="mitigating_factors"]:checked').forEach(checkbox => {
-            mitigatingFactors.push(checkbox.value);
-        });
-        
-        console.log('Validation check:', {
-            providerValue: providerValue,
-            proceduresLength: procedures.length,
-            hasProvider: !!providerValue,
-            hasProcedures: procedures.length > 0
-        });
-        
-        if (!providerValue || procedures.length === 0) {
-            if (!isAutoCalculation) {
-                displayError('Please select a provider and at least one procedure.');
-            }
+        if (procedures.length === 0) {
+            displayError('Please select at least one procedure.');
             return;
         }
         
-        // Show appropriate loading state
-        if (isAutoCalculation) {
-            showAutoCalculationLoading();
-        } else {
-            showLoading(true);
+        if (!providerValue) {
+            displayError('Please select a provider.');
+            return;
         }
         
+        // Show loading state
+        showLoading(true);
+        
+        // Make API request
         fetch('/estimate', {
             method: 'POST',
             headers: {
@@ -546,7 +533,7 @@ document.addEventListener('DOMContentLoaded', function() {
             body: JSON.stringify({
                 provider: providerValue,
                 procedures: procedures,
-                mitigating_factors: mitigatingFactors
+                mitigating_factors: getSelectedMitigatingFactors()
             })
         })
         .then(response => {
@@ -556,145 +543,77 @@ document.addEventListener('DOMContentLoaded', function() {
             return response.json();
         })
         .then(data => {
-            if (isAutoCalculation) {
-                hideAutoCalculationLoading();
-                isAutoCalculating = false;
+            if (data.success) {
+                displayResults(data);
             } else {
-                showLoading(false);
+                displayError(data.error || 'Unknown error occurred');
             }
-            displayResults(data);
         })
         .catch(error => {
-            if (isAutoCalculation) {
-                hideAutoCalculationLoading();
-                isAutoCalculating = false;
-            } else {
-                showLoading(false);
-            }
-            if (!isAutoCalculation) {
-                displayError('Error calculating appointment time: ' + error.message);
-            }
+            console.error('Error:', error);
+            displayError('Failed to calculate appointment time. Please try again.');
+        })
+        .finally(() => {
+            showLoading(false);
+            isAutoCalculating = false;
+            hideAutoCalculationIndicator();
         });
     }
 
-    function showAutoCalculationLoading() {
-        // Show a subtle loading indicator for auto-calculation
-        const indicator = document.getElementById('autoCalcIndicator');
-        if (indicator) {
-            indicator.innerHTML = '<i class="fas fa-spinner fa-spin text-primary"></i> Calculating...';
-            indicator.style.display = 'block';
-        }
-    }
-
-    function hideAutoCalculationLoading() {
-        const indicator = document.getElementById('autoCalcIndicator');
-        if (indicator) {
-            indicator.style.display = 'none';
-        }
+    function getSelectedMitigatingFactors() {
+        const checkboxes = document.querySelectorAll('input[name="mitigating_factors"]:checked');
+        return Array.from(checkboxes).map(checkbox => checkbox.value);
     }
 
     function displayResults(data) {
-        if (!data.success) {
-            if (data.warning) {
-                showProviderAlert();
-            }
-            if (!isAutoCalculating) {
-                displayError(data.error);
-            }
-            return;
-        }
-
         const { procedures, provider, base_times, final_times, applied_factors } = data;
-
+        
         let html = `
             <div class="fade-in">
-                <h6 class="text-primary mb-3">
-                    <i class="fas fa-check-circle me-2"></i>
-                    ${procedures.length} Procedure${procedures.length > 1 ? 's' : ''} - ${provider}
-                </h6>
-        `;
-
-        // Show procedure details
-        if (procedures.length > 1) {
-            html += '<div class="mb-3">';
-            procedures.forEach((proc, index) => {
-                const isFirst = index === 0;
-                const adjustment = isFirst ? '' : ' (30% reduction applied)';
-                const isExcluded = excludedFromDetailPrompts.includes(proc.procedure);
-                
-                if (isExcluded) {
-                    html += `
-                        <div class="mb-2">
-                            <small class="text-muted">
-                                <strong>${proc.procedure}${adjustment}:</strong> Standard procedure
-                            </small>
+                <div class="text-center text-success mb-3">
+                    <i class="fas fa-check-circle fa-3x"></i>
+                    <h5 class="mt-2">Estimated Time</h5>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        <div class="border rounded p-3">
+                            <h6 class="text-muted">Assistant Time</h6>
+                            <h4 class="text-primary">${final_times.assistant_time} min</h4>
                         </div>
-                    `;
-                } else {
-                    html += `
-                        <div class="mb-2">
-                            <small class="text-muted">
-                                <strong>${proc.procedure}${adjustment}:</strong> ${proc.num_teeth} tooth${proc.num_teeth > 1 ? 's' : ''}, 
-                                ${proc.num_quadrants} quadrant${proc.num_quadrants > 1 ? 's' : ''}, 
-                                ${proc.num_surfaces} surface${proc.num_surfaces > 1 ? 's' : ''}/canal${proc.num_surfaces > 1 ? 's' : ''}
-                            </small>
-                        </div>
-                    `;
-                }
-            });
-            html += '</div>';
-        } else {
-            const proc = procedures[0];
-            const isExcluded = excludedFromDetailPrompts.includes(proc.procedure);
-            
-            if (isExcluded) {
-                html += `
-                    <div class="mb-2">
-                        <small class="text-muted">
-                            <strong>Details:</strong> Standard procedure
-                        </small>
                     </div>
-                `;
-            } else {
-                html += `
-                    <div class="mb-2">
-                        <small class="text-muted">
-                            <strong>Details:</strong> ${proc.num_teeth} tooth${proc.num_teeth > 1 ? 's' : ''}, 
-                            ${proc.num_quadrants} quadrant${proc.num_quadrants > 1 ? 's' : ''}, 
-                            ${proc.num_surfaces} surface${proc.num_surfaces > 1 ? 's' : ''}/canal${proc.num_surfaces > 1 ? 's' : ''}
-                        </small>
-                    </div>
-                `;
-            }
-        }
-        
-        html += `
-                <div class="time-breakdown success-state">
-                    <div class="time-item">
-                        <div class="time-label">
-                            <i class="fas fa-user-nurse text-info"></i>
-                            Assistant Time
+                    <div class="col-md-4 text-center">
+                        <div class="border rounded p-3">
+                            <h6 class="text-muted">Doctor Time</h6>
+                            <h4 class="text-info">${final_times.doctor_time} min</h4>
                         </div>
-                        <div class="time-value">${final_times.assistant_time} min</div>
                     </div>
-                    
-                    <div class="time-item">
-                        <div class="time-label">
-                            <i class="fas fa-user-md text-success"></i>
-                            Doctor Time
+                    <div class="col-md-4 text-center">
+                        <div class="border rounded p-3 bg-primary text-white">
+                            <h6 class="opacity-75">Total Time</h6>
+                            <h3>${final_times.total_time} min</h3>
                         </div>
-                        <div class="time-value">${final_times.doctor_time} min</div>
-                    </div>
-                    
-                    <div class="time-item">
-                        <div class="time-label">
-                            <i class="fas fa-clock text-primary"></i>
-                            Total Time
-                        </div>
-                        <div class="time-value">${final_times.total_time} min</div>
                     </div>
                 </div>
+                <div class="mt-3 text-center">
+                    <small class="text-muted">
+                        <i class="fas fa-user-md me-1"></i>
+                        ${procedures.length} Procedure${procedures.length > 1 ? 's' : ''} - ${provider}
+                    </small>
+                </div>
         `;
+        
+        // Show procedure details
+        if (procedures && procedures.length > 0) {
+            html += '<div class="mt-3"><small class="text-muted">Details: ';
+            const details = procedures.map(proc => {
+                const parts = [];
+                if (proc.num_teeth > 1) parts.push(`${proc.num_teeth} tooths`);
+                if (proc.num_quadrants > 1) parts.push(`${proc.num_quadrants} quadrant`);
+                if (proc.num_surfaces > 1) parts.push(`${proc.num_surfaces} surface/canal`);
+                return parts.length > 0 ? parts.join(', ') : '1 tooth, 1 quadrant, 1 surface/canal';
+            });
+            html += details.join('; ') + '</small></div>';
+        }
 
         // Show base times if different from final times
         if (hasAppliedFactors(base_times, final_times) || hasTeethAdjustments(procedures)) {
@@ -771,6 +690,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add event listeners for auto-calculation and bidirectional filtering
     if (providerSelect) {
         providerSelect.addEventListener('change', function() {
+            console.log('🔄 Provider changed to:', this.value);
             updateProcedureOptions(this.value);
             scheduleAutoCalculate();
         });
