@@ -526,6 +526,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             const procedure = procedureSelect.value;
+            
+            // FIXED: Skip empty procedure selections
+            if (!procedure || procedure.trim() === '') {
+                console.log(`Skipping procedure item ${index}: empty procedure selection`);
+                return; // Skip this item
+            }
+            
             const isExcluded = excludedFromDetailPrompts.includes(procedure);
             
             if (isExcluded) {
