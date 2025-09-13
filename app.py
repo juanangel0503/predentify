@@ -203,5 +203,63 @@ def get_preauth_insurers():
     insurers = ['CDCP', 'Private (Generic Template)']
     return jsonify(insurers)
 
+
+@app.route('/api/procedure1')
+def get_procedure1_procedures():
+    """API endpoint to get all Procedure 1 procedures"""
+    import json
+    with open('data/procedures.json', 'r') as f:
+        procedures = json.load(f)
+    
+    procedure1_procedures = []
+    for proc_name, proc_data in procedures.items():
+        if proc_data.get('section') == 'procedure1':
+            procedure1_procedures.append(proc_name)
+    
+    return jsonify(sorted(procedure1_procedures))
+
+@app.route('/api/procedure2/<procedure1>/<provider>')
+def get_procedure2_for_procedure1_and_provider(procedure1, provider):
+    """API endpoint to get valid Procedure 2 procedures based on Procedure 1 and Provider"""
+    import json
+    
+    # Load the mapping
+    with open('data/procedure1_to_procedure2.json', 'r') as f:
+        mapping = json.load(f)
+    
+    # Load procedures and provider compatibility
+    with open('data/procedures.json', 'r') as f:
+        procedures = json.load(f)
+    with open('data/provider_compatibility.json', 'r') as f:
+        compatibility = json.load(f)
+    
+    valid_procedure2 = []
+    
+    # Get possible Procedure 2 procedures for this Procedure 1
+    if procedure1 in mapping:
+        possible_procedure2 = mapping[procedure1]
+        
+        # Filter by provider compatibility
+        for proc2 in possible_procedure2:
+            if proc2 in compatibility and provider in compatibility[proc2]:
+                valid_procedure2.append(proc2)
+    
+    return jsonify(sorted(valid_procedure2))
+
+@app.route('/api/procedure2')
+def get_all_procedure2_procedures():
+    """API endpoint to get all Procedure 2 procedures"""
+    import json
+    with open('data/procedures.json', 'r') as f:
+        procedures = json.load(f)
+    
+    procedure2_procedures = []
+    for proc_name, proc_data in procedures.items():
+        if proc_data.get('section') == 'procedure2':
+            procedure2_procedures.append(proc_name)
+    
+    return jsonify(sorted(procedure2_procedures))
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
