@@ -53,147 +53,124 @@ class ProcedureDataLoader:
                 print(f"Skipping {procedure_name}: Invalid time data")
                 continue
                 
-            # Check if procedure has at least one provider who can perform it
-            if not self._has_available_providers(procedure_name):
-                print(f"Skipping {procedure_name}: No available providers")
-                continue
-                
-            # Check if procedure is active (not deprecated)
-            if not self._is_active_procedure(procedure_name, proc_data):
-                print(f"Skipping {procedure_name}: Inactive/deprecated")
-                continue
-                
-            available.append(procedure_name)
+            # Check if at least one provider can perform this procedure
+            if procedure_name in self.provider_compatibility:
+                providers = self.provider_compatibility[procedure_name]
+                if providers and len(providers) > 0:
+                    available.append(procedure_name)
+                else:
+                    print(f"Skipping {procedure_name}: No providers available")
+            else:
+                print(f"Skipping {procedure_name}: No provider compatibility data")
         
         return sorted(available)
 
     def _is_valid_procedure_data(self, proc_data: Dict) -> bool:
-        """Check if procedure has valid time data"""
+        """Check if procedure data is valid"""
         try:
-            assistant_time = float(proc_data.get('assistant_time', 0))
-            doctor_time = float(proc_data.get('doctor_time', 0))
-            total_time = float(proc_data.get('total_time', 0))
+            assistant_time = proc_data.get('assistant_time', 0)
+            doctor_time = proc_data.get('doctor_time', 0)
+            total_time = proc_data.get('total_time', 0)
             
-            # Check for valid numeric values
+            # Check for NaN or negative values
             if math.isnan(assistant_time) or math.isnan(doctor_time) or math.isnan(total_time):
                 return False
-                
-            # Check for reasonable time values (not negative, not zero total)
-            if total_time <= 0 or assistant_time < 0 or doctor_time < 0:
+            if assistant_time < 0 or doctor_time < 0 or total_time < 0:
+                return False
+            if total_time == 0:
                 return False
                 
             return True
-        except (ValueError, TypeError):
+        except (TypeError, ValueError):
             return False
-
-    def _has_available_providers(self, procedure_name: str) -> bool:
-        """Check if procedure has at least one provider who can perform it"""
-        if procedure_name not in self.provider_compatibility:
-            return False
-            
-        providers = self.provider_compatibility[procedure_name]
-        return len(providers) > 0 and all(provider.strip() for provider in providers)
-
-    def _is_active_procedure(self, procedure_name: str, proc_data: Dict) -> bool:
-        """Check if procedure is active (not deprecated or inactive)"""
-        # Check for deprecated/inactive indicators
-        section = proc_data.get('section', '')
-        
-        # Skip procedures in deprecated sections
-        if section in ['deprecated', 'inactive', 'old']:
-            return False
-            
-        # Skip procedures with specific names that indicate they're not active
-        inactive_keywords = ['old', 'deprecated', 'inactive', 'test', 'temp']
-        if any(keyword in procedure_name.lower() for keyword in inactive_keywords):
-            return False
-            
-        return True
 
     def get_procedures(self) -> List[str]:
-        """Return only available procedures"""
+        """Get list of available procedures"""
         return self.available_procedures
 
-    def get_all_procedures(self) -> List[str]:
-        """Return all procedures (including unavailable ones) - for debugging"""
-        return list(self.procedures_data.keys())
-
     def get_providers(self) -> List[str]:
+        """Get list of all providers"""
         return self.providers
 
     def get_mitigating_factors(self) -> List[Dict]:
+        """Get list of mitigating factors"""
         return self.mitigating_factors
 
-    def get_procedure_base_times(self, procedure: str) -> Dict[str, float]:
-        if procedure in self.procedures_data:
-            proc_data = self.procedures_data[procedure]
-            return {
-                'assistant_time': proc_data['assistant_time'],
-                'doctor_time': proc_data['doctor_time'],
-                'total_time': proc_data['total_time']
-            }
-        return {'assistant_time': 0.0, 'doctor_time': 0.0, 'total_time': 0.0}
-
     def check_provider_performs_procedure(self, provider: str, procedure: str) -> bool:
+        """Check if a provider can perform a specific procedure"""
         if procedure in self.provider_compatibility:
             return provider in self.provider_compatibility[procedure]
         return True  # Default to True if no compatibility data
 
-    def round_to_nearest_10(self, minutes: float) -> int:
-        """Round to nearest 10 minutes (Excel MROUND behavior) - FIXED"""
-        if math.isnan(minutes) or minutes < 0:
-            return 0
+    def get_procedure_base_times(self, procedure: str) -> Dict[str, float]:
+        """Get base times for a procedure"""
+        if procedure not in self.procedures_data:
+            return {'assistant_time': 0.0, 'doctor_time': 0.0, 'total_time': 0.0}
         
-        # Excel MROUND behavior: round to nearest multiple of 10
-        # For values exactly halfway (like 105), round up
-        # Use math.floor and add 0.5 to get "round half away from zero" behavior
-        return int(math.floor(minutes / 10 + 0.5) * 10)
+        proc_data = self.procedures_data[procedure]
+        assistant_time = float(proc_data.get('assistant_time', 0))
+        doctor_time = float(proc_data.get('doctor_time', 0))
+        total_time = float(proc_data.get('total_time', 0))
+        
+        # Handle NaN values
+        if math.isnan(assistant_time):
+            assistant_time = 0.0
+        if math.isnan(doctor_time):
+            doctor_time = 0.0
+        if math.isnan(total_time):
+            total_time = 0.0
+        
+        return {
+            'assistant_time': assistant_time,
+            'doctor_time': doctor_time,
+            'total_time': total_time
+        }
 
     def _calculate_doctor_time_excel_logic(self, procedure: str) -> float:
         """
-        Calculate doctor time using Excel formula logic:
-        =IF(B2<>"",IF(AND(XLOOKUP(B2,Metadata2!A:A,Metadata2!B:B,0)="",XLOOKUP(B2,Metadata2!A:A,Metadata2!C:C,0)=""),0,IF(XLOOKUP(B2,Metadata2!A:A,Metadata2!C:C,0)="",0,XLOOKUP(B2,Metadata2!A:A,Metadata2!C:C,0))),0)
+        Calculate doctor time using Excel formula logic
+        This implements the complex IF and XLOOKUP logic from Excel
         """
-        if not procedure or procedure == "":
-            return 0.0
-            
-        # Get base times from Metadata2 equivalent (our procedures_data)
         base_times = self.get_procedure_base_times(procedure)
-        assistant_time = base_times['assistant_time']
         doctor_time = base_times['doctor_time']
         
-        # Excel logic:
-        # IF both Assistant Time and Doctor Time are empty (""): return 0
-        # ELSE IF Doctor Time is empty (""): return 0  
-        # ELSE: return Doctor Time
+        # If doctor time is 0 or NaN, calculate as Total - Assistant
+        if doctor_time == 0 or math.isnan(doctor_time):
+            assistant_time = base_times['assistant_time']
+            total_time = base_times['total_time']
+            doctor_time = total_time - assistant_time
+            
+        return max(0, doctor_time)  # Ensure non-negative
+
+    def round_to_nearest_10(self, minutes: float) -> int:
+        """
+        Round to nearest 10 minutes using Excel MROUND behavior
+        Excel MROUND rounds .5 away from zero (e.g., 105 → 110, not 100)
+        """
+        if math.isnan(minutes) or minutes < 0:
+            return 0
         
-        # In our case, "empty" means 0 or NaN
-        assistant_empty = (assistant_time == 0.0 or math.isnan(assistant_time))
-        doctor_empty = (doctor_time == 0.0 or math.isnan(doctor_time))
-        
-        if assistant_empty and doctor_empty:
-            return 0.0
-        elif doctor_empty:
-            return 0.0
-        else:
-            return doctor_time
+        # Use math.floor with +0.5 to implement "round half away from zero"
+        return int(math.floor(minutes / 10 + 0.5) * 10)
 
     def calculate_appointment_time(self, procedures: List[Dict], provider: str, 
                                  mitigating_factors: List[str] = None) -> Dict[str, Any]:
         """
         Calculate appointment time using EXCEL FORMULA LOGIC
         
-        FIXED: All Crown procedures now use correct adjustment formulas
+        FIXED: Time adjustment rule for multiple procedures:
+        - First procedure: calculate normally
+        - Second and subsequent procedures: reduce by 30%, then round to nearest 10 minutes
         """
         if mitigating_factors is None:
             mitigating_factors = []
             
         total_base_assistant_time = 0.0
-        total_base_doctor_time = 0.0  # Sum of base doctor times (Excel formula logic)
+        total_base_doctor_time = 0.0
         total_adjusted_time = 0.0
         procedure_details = []
         
-        for proc_data in procedures:
+        for proc_index, proc_data in enumerate(procedures):
             procedure = proc_data['procedure']
             num_teeth = int(proc_data.get('num_teeth', 1))
             num_surfaces = int(proc_data.get('num_surfaces', 1))
@@ -256,14 +233,16 @@ class ProcedureDataLoader:
                     teeth_adjustment = (num_teeth - 1) * 5
                     adjusted_total += teeth_adjustment
             
-            # Apply 30% reduction for 2nd+ procedures
-            procedure_index = len(procedure_details)
-            if procedure_index > 0:
+            # FIXED: Apply 30% reduction for 2nd+ procedures (per procedure, not total)
+            # This reduction is applied to the procedure's own calculated time
+            if proc_index > 0:  # Second procedure and beyond
+                # Reduce by 30% (multiply by 0.7)
                 adjusted_total = adjusted_total * 0.7
+                print(f"Applied 30% reduction to procedure {proc_index + 1} ({procedure}): {adjusted_total / 0.7:.1f} → {adjusted_total:.1f}")
             
             # Add to totals
             total_base_assistant_time += base_assistant
-            total_base_doctor_time += excel_doctor_time  # Use Excel formula result
+            total_base_doctor_time += excel_doctor_time
             total_adjusted_time += adjusted_total
             
             # Store procedure details
@@ -279,7 +258,7 @@ class ProcedureDataLoader:
                 },
                 'adjusted_times': {
                     'assistant_time': base_assistant,
-                    'doctor_time': excel_doctor_time,  # Use Excel formula result
+                    'doctor_time': excel_doctor_time,
                     'total_time': adjusted_total
                 }
             })
@@ -306,9 +285,9 @@ class ProcedureDataLoader:
         
         # Calculate final times BEFORE rounding
         final_assistant_time = total_base_assistant_time
-        final_doctor_time = total_base_doctor_time  # Use Excel formula result
+        final_doctor_time = total_base_doctor_time
         
-        # Round all times
+        # Round all times to nearest 10 minutes
         final_assistant_time_rounded = self.round_to_nearest_10(final_assistant_time)
         final_doctor_time_rounded = self.round_to_nearest_10(final_doctor_time)
         final_total_time_rounded = self.round_to_nearest_10(final_total_time)
