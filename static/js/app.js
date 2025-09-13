@@ -83,8 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                value="1" min="1" max="4" placeholder="1" style="display: none;">
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label small surfaces-label" style="display: none;">Surfaces</label>
-                        <label class="form-label small canals-label" style="display: none;">Canals</label>
+                        <label class="form-label small surfaces-canals-label">Surfaces/Canals</label>
                         <input type="number" class="form-control surfaces-input" name="procedures[${procedureCount}][num_surfaces]" 
                                value="1" min="1" max="10" placeholder="1" style="display: none;">
                     </div>
@@ -237,15 +236,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Enhanced field visibility with exclusion list
+    // Enhanced field visibility with proper Surfaces & Canals logic
     function updateFieldVisibility() {
         document.querySelectorAll('.procedure-item').forEach(item => {
             const procedureSelect = item.querySelector('.procedure-select');
             const teethInput = item.querySelector('.teeth-input');
             const quadrantsInput = item.querySelector('.quadrants-input');
             const surfacesInput = item.querySelector('.surfaces-input');
-            const surfacesLabel = item.querySelector('.surfaces-label');
-            const canalsLabel = item.querySelector('.canals-label');
+            const surfacesCanalsLabel = item.querySelector('.surfaces-canals-label');
             
             // Check if elements exist before accessing their properties
             if (!procedureSelect || !teethInput || !quadrantsInput || !surfacesInput) {
@@ -263,8 +261,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 teethInput.style.display = 'none';
                 quadrantsInput.style.display = 'none';
                 surfacesInput.style.display = 'none';
-                if (surfacesLabel) surfacesLabel.style.display = 'none';
-                if (canalsLabel) canalsLabel.style.display = 'none';
+                if (surfacesCanalsLabel) surfacesCanalsLabel.style.display = 'none';
                 
                 // Hide the teeth label as well
                 const teethLabel = item.querySelector('label[for*="num_teeth"]');
@@ -283,28 +280,37 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
-            // Reset other field visibility
+            // Reset field visibility
             quadrantsInput.style.display = 'none';
             surfacesInput.style.display = 'none';
-            if (surfacesLabel) surfacesLabel.style.display = 'none';
-            if (canalsLabel) canalsLabel.style.display = 'none';
+            if (surfacesCanalsLabel) surfacesCanalsLabel.style.display = 'none';
             
             // Show quadrants only if more than one tooth
             if (teeth > 1) {
                 quadrantsInput.style.display = 'block';
             }
             
-            // Show surfaces only for fillings
+            // FIXED: Show Surfaces only for Filling procedures
             if (procedure === 'Filling') {
                 surfacesInput.style.display = 'block';
-                if (surfacesLabel) surfacesLabel.style.display = 'block';
+                if (surfacesCanalsLabel) {
+                    surfacesCanalsLabel.style.display = 'block';
+                    surfacesCanalsLabel.textContent = 'Surfaces';
+                }
+                console.log(`Procedure "${procedure}" - showing Surfaces field`);
             }
             
-            // Show canals only for root canals
+            // FIXED: Show Canals only for Root Canal procedures
             if (procedure === 'Root Canal') {
                 surfacesInput.style.display = 'block';
-                if (canalsLabel) canalsLabel.style.display = 'block';
+                if (surfacesCanalsLabel) {
+                    surfacesCanalsLabel.style.display = 'block';
+                    surfacesCanalsLabel.textContent = 'Canals';
+                }
+                console.log(`Procedure "${procedure}" - showing Canals field`);
             }
+            
+            // Hide both for everything else (already handled by reset above)
         });
     }
 
