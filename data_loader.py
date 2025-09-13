@@ -86,6 +86,11 @@ class ProcedureDataLoader:
                 return False
             if total_time == 0:
                 return False
+            
+            # Check if assistant + doctor = total (within small tolerance for floating point)
+            expected_total = assistant_time + doctor_time
+            if abs(expected_total - total_time) > 0.01:
+                return False
                 
             return True
         except (TypeError, ValueError):
