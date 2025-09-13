@@ -310,5 +310,29 @@
     "Dr. Miekella",
     "Dr. Kayla",
     "Dr. Radin"
+  ],
+  "Extraction (Procedure 2)": [
+    "Dr. Miekella",
+    "Dr. Kayla",
+    "Dr. Radin"
+  ],
+  "Filling (Procedure 2)": [
+    "Dr. Miekella",
+    "Dr. Kayla",
+    "Dr. Radin",
+    "Amber",
+    "Kym",
+    "Natalia"
+  ],
+  "Sedation (Procedure 2)": [
+    "Dr. Miekella",
+    "Dr. Kayla",
+    "Dr. Radin",
+    "Marina",
+    "Monse",
+    "Jessica",
+    "Amber",
+    "Kym",
+    "Natalia"
   ]
 }
