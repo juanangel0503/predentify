@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                value="1" min="1" max="32" placeholder="1">
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label small">Quadrants</label>
+                        <label class="form-label small quadrants-label">Quadrants</label>
                         <input type="number" class="form-control quadrants-input" name="procedures[${procedureCount}][num_quadrants]" 
                                value="1" min="1" max="4" placeholder="1" style="display: none;">
                     </div>
@@ -259,12 +259,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Enhanced field visibility with proper Surfaces & Canals logic
+    // Enhanced field visibility with proper Quadrants, Surfaces & Canals logic
     function updateFieldVisibility() {
         document.querySelectorAll('.procedure-item').forEach(item => {
             const procedureSelect = item.querySelector('.procedure-select');
             const teethInput = item.querySelector('.teeth-input');
             const quadrantsInput = item.querySelector('.quadrants-input');
+            const quadrantsLabel = item.querySelector('.quadrants-label');
             const surfacesInput = item.querySelector('.surfaces-input');
             const surfacesCanalsLabel = item.querySelector('.surfaces-canals-label');
             
@@ -284,6 +285,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 teethInput.style.display = 'none';
                 quadrantsInput.style.display = 'none';
                 surfacesInput.style.display = 'none';
+                if (quadrantsLabel) quadrantsLabel.style.display = 'none';
                 if (surfacesCanalsLabel) surfacesCanalsLabel.style.display = 'none';
                 
                 // Hide the teeth label as well
@@ -306,11 +308,16 @@ document.addEventListener('DOMContentLoaded', function() {
             // Reset field visibility
             quadrantsInput.style.display = 'none';
             surfacesInput.style.display = 'none';
+            if (quadrantsLabel) quadrantsLabel.style.display = 'none';
             if (surfacesCanalsLabel) surfacesCanalsLabel.style.display = 'none';
             
-            // Show quadrants only if more than one tooth
+            // FIXED: Show quadrants only if more than one tooth
             if (teeth > 1) {
                 quadrantsInput.style.display = 'block';
+                if (quadrantsLabel) quadrantsLabel.style.display = 'block';
+                console.log(`Teeth: ${teeth} - showing Quadrants field`);
+            } else {
+                console.log(`Teeth: ${teeth} - hiding Quadrants field (only show for >1 tooth)`);
             }
             
             // FIXED: Show Surfaces only for Filling procedures
@@ -403,7 +410,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateProviderOptions(procedure) {
         if (!isDataLoaded) {
-            console.warn('Data not loaded yet, skipping provider update');
+            console.warn('Data not loaded yet, skipping procedure update');
             return;
         }
         console.log('🔄 Updating provider options for procedure:', procedure);
