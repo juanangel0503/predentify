@@ -189,7 +189,7 @@ class ProcedureDataLoader:
             adjusted_total = base_total
             
             # Apply teeth/surfaces/quadrants adjustments to TOTAL TIME ONLY
-            if procedure == 'Implant':
+            if procedure == 'Implant surgery':
                 if num_teeth > 1:
                     teeth_adjustment = (num_teeth - 1) * 10
                     adjusted_total += teeth_adjustment
