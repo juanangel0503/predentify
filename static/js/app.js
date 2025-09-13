@@ -137,6 +137,26 @@ document.addEventListener('DOMContentLoaded', function() {
         scheduleAutoCalculate(); // Recalculate after removal
     }
 
+    // NEW: Reset form fields to default values
+    function resetFormFields() {
+        console.log('🔄 Resetting form fields to default values');
+        
+        document.querySelectorAll('.procedure-item').forEach(item => {
+            const teethInput = item.querySelector('.teeth-input');
+            const quadrantsInput = item.querySelector('.quadrants-input');
+            const surfacesInput = item.querySelector('.surfaces-input');
+            
+            if (teethInput) teethInput.value = '1';
+            if (quadrantsInput) quadrantsInput.value = '1';
+            if (surfacesInput) surfacesInput.value = '1';
+        });
+        
+        // Clear results
+        resultsDiv.innerHTML = '';
+        
+        console.log('✅ Form fields reset to default values');
+    }
+
     function addProcedureEventListeners() {
         // Remove procedure buttons
         document.querySelectorAll('.remove-procedure').forEach(btn => {
@@ -167,12 +187,15 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
-        // Procedure selection changes - with auto-calculation and provider filtering
+        // Procedure selection changes - with auto-calculation, provider filtering, and field reset
         document.querySelectorAll('.procedure-select').forEach(select => {
             select.addEventListener('change', function() {
+                console.log('🔄 Procedure changed to:', this.value);
                 updateFieldVisibility();
                 // FIXED: Pass the selected procedure value to updateProviderOptions
                 updateProviderOptions(this.value);
+                // NEW: Reset form fields when procedure changes
+                resetFormFields();
                 scheduleAutoCalculate();
             });
         });
@@ -693,11 +716,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Enhanced auto-calculation event listeners
     const providerSelect = document.getElementById('provider');
     
-    // Add event listeners for auto-calculation and bidirectional filtering
+    // Add event listeners for auto-calculation, bidirectional filtering, and field reset
     if (providerSelect) {
         providerSelect.addEventListener('change', function() {
             console.log('🔄 Provider changed to:', this.value);
             updateProcedureOptions(this.value);
+            // NEW: Reset form fields when provider changes
+            resetFormFields();
             scheduleAutoCalculate();
         });
     }
