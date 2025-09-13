@@ -1,24 +1,24 @@
 {
   "Implant surgery": [
-    "Dr. Miekella"
+    "Miekella"
   ],
   "Filling": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin",
+    "Miekella",
+    "Kayla",
+    "Radin",
     "Amber",
     "Kym",
     "Natalia"
   ],
   "Crown Preparation": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin"
+    "Miekella",
+    "Kayla",
+    "Radin"
   ],
   "Crown Delivery": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin",
+    "Miekella",
+    "Kayla",
+    "Radin",
     "Marina",
     "Monse",
     "Jessica",
@@ -27,9 +27,9 @@
     "Natalia"
   ],
   "Implant Crown Impression": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin",
+    "Miekella",
+    "Kayla",
+    "Radin",
     "Marina",
     "Monse",
     "Jessica",
@@ -46,17 +46,17 @@
     "Natalia"
   ],
   "Root Canal": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin"
+    "Miekella",
+    "Kayla",
+    "Radin"
   ],
   "Gum Graft": [
-    "Dr. Miekella"
+    "Miekella"
   ],
   "Extraction": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin"
+    "Miekella",
+    "Kayla",
+    "Radin"
   ],
   "Invisalign Insert 1": [
     "Marina",
@@ -67,9 +67,9 @@
     "Natalia"
   ],
   "Invisalign Insert 2": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin"
+    "Miekella",
+    "Kayla",
+    "Radin"
   ],
   "Invisalign Recall": [
     "Marina",
@@ -80,9 +80,9 @@
     "Natalia"
   ],
   "Invisalign Complete": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin",
+    "Miekella",
+    "Kayla",
+    "Radin",
     "Marina",
     "Monse",
     "Jessica"
@@ -110,9 +110,9 @@
     "Hygiene"
   ],
   "New Patient Exam": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin",
+    "Miekella",
+    "Kayla",
+    "Radin",
     "Marina",
     "Monse",
     "Jessica",
@@ -138,14 +138,14 @@
     "Natalia"
   ],
   "Pulpectomy": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin"
+    "Miekella",
+    "Kayla",
+    "Radin"
   ],
   "Sedation": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin",
+    "Miekella",
+    "Kayla",
+    "Radin",
     "Marina",
     "Monse",
     "Jessica",
@@ -258,57 +258,6 @@
     "Natalia"
   ],
   "Surgical Debridement": [
-    "Dr. Miekella"
-  ],
-  "Socket Preservation": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin"
-  ],
-  "Sinus Lift": [
-    "Dr. Miekella"
-  ],
-  "Bone Graft": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin",
-    "Amber",
-    "Kym",
-    "Natalia"
-  ],
-  "Root Canal Treated Tooth": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin",
-    "Marina",
-    "Monse",
-    "Jessica",
-    "Amber",
-    "Kym",
-    "Natalia"
-  ],
-  "Post": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin",
-    "Marina",
-    "Monse",
-    "Jessica",
-    "Amber",
-    "Kym",
-    "Natalia"
-  ],
-  "Core & Crown Prep": [
-    "Marina",
-    "Monse",
-    "Jessica",
-    "Amber",
-    "Kym",
-    "Natalia"
-  ],
-  "Pulp Cap": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin"
+    "Miekella"
   ]
 }

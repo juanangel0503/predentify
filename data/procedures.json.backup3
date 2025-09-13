@@ -6,10 +6,10 @@
     "section": "procedure1"
   },
   "Filling": {
-    "assistant_time": 0.0,
-    "doctor_time": 20.0,
-    "total_time": 20.0,
-    "section": "procedure2"
+    "assistant_time": 10.0,
+    "doctor_time": 0.0,
+    "total_time": 30.0,
+    "section": "procedure1"
   },
   "Crown Preparation": {
     "assistant_time": 10.0,
@@ -48,10 +48,10 @@
     "section": "procedure1"
   },
   "Extraction": {
-    "assistant_time": 0.0,
-    "doctor_time": 10.0,
-    "total_time": 10.0,
-    "section": "procedure2"
+    "assistant_time": 10.0,
+    "doctor_time": 0.0,
+    "total_time": 50.0,
+    "section": "procedure1"
   },
   "Invisalign Insert 1": {
     "assistant_time": 30.0,
@@ -238,47 +238,5 @@
     "doctor_time": 0.0,
     "total_time": 80.0,
     "section": "procedure1"
-  },
-  "Socket Preservation": {
-    "assistant_time": 0.0,
-    "doctor_time": 20.0,
-    "total_time": 20.0,
-    "section": "procedure2"
-  },
-  "Sinus Lift": {
-    "assistant_time": 0.0,
-    "doctor_time": 10.0,
-    "total_time": 10.0,
-    "section": "procedure2"
-  },
-  "Bone Graft": {
-    "assistant_time": 0.0,
-    "doctor_time": 10.0,
-    "total_time": 10.0,
-    "section": "procedure2"
-  },
-  "Root Canal Treated Tooth": {
-    "assistant_time": 0.0,
-    "doctor_time": 10.0,
-    "total_time": 10.0,
-    "section": "procedure2"
-  },
-  "Post": {
-    "assistant_time": 0.0,
-    "doctor_time": 10.0,
-    "total_time": 10.0,
-    "section": "procedure2"
-  },
-  "Core & Crown Prep": {
-    "assistant_time": 0.0,
-    "doctor_time": 50.0,
-    "total_time": 50.0,
-    "section": "procedure2"
-  },
-  "Pulp Cap": {
-    "assistant_time": 0.0,
-    "doctor_time": 10.0,
-    "total_time": 10.0,
-    "section": "procedure2"
   }
 }

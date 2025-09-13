@@ -48,5 +48,10 @@
     "name": "Need for Informed Consent or Discussion",
     "value": 10.0,
     "is_multiplier": true
+  },
+  {
+    "name": "Uncomplicated / Simple",
+    "value": 0.85,
+    "is_multiplier": true
   }
 ]

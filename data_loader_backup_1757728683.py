@@ -281,12 +281,6 @@ class ProcedureDataLoader:
                 if factor_data['is_multiplier']:
                     # Apply multiplier to total time
                     final_total_time *= value
-                    
-                    # Special handling for Uncomplicated / Simple - round up to next 10 minutes
-                    if factor_name == 'Uncomplicated / Simple':
-                        # Round up to the next 10 minutes
-                        final_total_time = ((final_total_time + 9) // 10) * 10
-                        print(f"Applied Uncomplicated / Simple factor: rounded up to {final_total_time} minutes")
                 else:
                     # Add time to total
                     final_total_time += value
@@ -297,18 +291,8 @@ class ProcedureDataLoader:
                 })
         
         # Calculate final times BEFORE rounding
-        # The total_adjusted_time already includes all adjustments, so we need to 
-        # proportionally distribute the adjustments between assistant and doctor times
-        if total_base_assistant_time + total_base_doctor_time > 0:
-            # Calculate the ratio of adjustments
-            total_base_time = total_base_assistant_time + total_base_doctor_time
-            adjustment_ratio = total_adjusted_time / total_base_time if total_base_time > 0 else 1
-            
-            final_assistant_time = total_base_assistant_time * adjustment_ratio
-            final_doctor_time = total_base_doctor_time * adjustment_ratio
-        else:
-            final_assistant_time = total_base_assistant_time
-            final_doctor_time = total_base_doctor_time
+        final_assistant_time = total_base_assistant_time
+        final_doctor_time = total_base_doctor_time
         
         # Round all times to nearest 10 minutes
         final_assistant_time_rounded = self.round_to_nearest_10(final_assistant_time)
