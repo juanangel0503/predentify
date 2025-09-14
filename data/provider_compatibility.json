@@ -1,338 +1,283 @@
 {
-  "Implant surgery": [
-    "Dr. Miekella"
+  "Dr. Miekella": [
+    "Implant",
+    "Filling",
+    "Crown",
+    "Crown Delivery",
+    "Implant Crown Impression",
+    "Root Canal",
+    "Gum Graft",
+    "Extraction",
+    "Invisalign Insert 2",
+    "Invisalign Complete",
+    "Impressions",
+    "Consultation",
+    "Hygiene",
+    "New Patient Exam",
+    "Post Op Exam",
+    "Recall Exam",
+    "Pulpectomy",
+    "Sedation",
+    "Botox",
+    "Nightguard Insert",
+    "Happy Visit",
+    "SDF Application",
+    "CBCT",
+    "Specific Exam",
+    "Emergency Exam",
+    "Appliance Adjustment",
+    "Implant Planning",
+    "Crown Re-cement",
+    "Kids Hygiene 0-2",
+    "Kids Hygiene 3-7",
+    "In Office Whitenings",
+    "Bite Adjustment",
+    "Laser Desensitization",
+    "Surgical Debridement"
   ],
-  "Filling": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin",
-    "Amber",
-    "Kym",
-    "Natalia"
+  "Dr. Kayla": [
+    "Implant",
+    "Filling",
+    "Crown",
+    "Crown Delivery",
+    "Implant Crown Impression",
+    "Root Canal",
+    "Gum Graft",
+    "Extraction",
+    "Invisalign Insert 2",
+    "Invisalign Complete",
+    "Impressions",
+    "Consultation",
+    "Hygiene",
+    "New Patient Exam",
+    "Post Op Exam",
+    "Recall Exam",
+    "Pulpectomy",
+    "Sedation",
+    "Botox",
+    "Nightguard Insert",
+    "Happy Visit",
+    "SDF Application",
+    "CBCT",
+    "Specific Exam",
+    "Emergency Exam",
+    "Appliance Adjustment",
+    "Implant Planning",
+    "Crown Re-cement",
+    "Kids Hygiene 0-2",
+    "Kids Hygiene 3-7",
+    "In Office Whitenings",
+    "Bite Adjustment",
+    "Laser Desensitization"
   ],
-  "Crown Preparation": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin"
+  "Dr. Radin": [
+    "Implant",
+    "Filling",
+    "Crown",
+    "Crown Delivery",
+    "Implant Crown Impression",
+    "Root Canal",
+    "Gum Graft",
+    "Extraction",
+    "Invisalign Insert 2",
+    "Invisalign Complete",
+    "Impressions",
+    "Consultation",
+    "Hygiene",
+    "New Patient Exam",
+    "Post Op Exam",
+    "Recall Exam",
+    "Pulpectomy",
+    "Sedation",
+    "Botox",
+    "Nightguard Insert",
+    "Happy Visit",
+    "SDF Application",
+    "CBCT",
+    "Specific Exam",
+    "Emergency Exam",
+    "Appliance Adjustment",
+    "Implant Planning",
+    "Crown Re-cement",
+    "Kids Hygiene 0-2",
+    "Kids Hygiene 3-7",
+    "In Office Whitenings",
+    "Bite Adjustment",
+    "Laser Desensitization"
   ],
-  "Crown Delivery": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin",
-    "Marina",
-    "Monse",
-    "Jessica",
-    "Amber",
-    "Kym",
-    "Natalia"
+  "Dr. Marina": [
+    "Crown Delivery",
+    "Implant Crown Impression",
+    "Implant Follow-up",
+    "Invisalign Insert 1",
+    "Invisalign Recall",
+    "Invisalign Complete",
+    "Impressions",
+    "Consultation",
+    "Hygiene",
+    "New Patient Exam",
+    "Post Op Exam",
+    "Recall Exam",
+    "Sedation",
+    "Botox",
+    "Nightguard Insert",
+    "Happy Visit",
+    "SDF Application",
+    "CBCT",
+    "Specific Exam",
+    "Emergency Exam",
+    "Appliance Adjustment",
+    "Implant Planning",
+    "Kids Hygiene 0-2",
+    "Kids Hygiene 3-7",
+    "In Office Whitenings",
+    "Bite Adjustment",
+    "Laser Desensitization"
   ],
-  "Implant Crown Impression": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin",
-    "Marina",
-    "Monse",
-    "Jessica",
-    "Amber",
-    "Kym",
-    "Natalia"
+  "Dr. Monse": [
+    "Crown Delivery",
+    "Implant Crown Impression",
+    "Implant Follow-up",
+    "Invisalign Insert 1",
+    "Invisalign Recall",
+    "Invisalign Complete",
+    "Impressions",
+    "Consultation",
+    "Hygiene",
+    "New Patient Exam",
+    "Post Op Exam",
+    "Recall Exam",
+    "Sedation",
+    "Botox",
+    "Nightguard Insert",
+    "Happy Visit",
+    "SDF Application",
+    "CBCT",
+    "Specific Exam",
+    "Emergency Exam",
+    "Appliance Adjustment",
+    "Implant Planning",
+    "Kids Hygiene 0-2",
+    "Kids Hygiene 3-7",
+    "In Office Whitenings",
+    "Bite Adjustment",
+    "Laser Desensitization"
   ],
-  "Implant Follow-up": [
-    "Marina",
-    "Monse",
-    "Jessica",
-    "Amber",
-    "Kym",
-    "Natalia"
+  "Dr. Jessica": [
+    "Crown Delivery",
+    "Implant Crown Impression",
+    "Implant Follow-up",
+    "Invisalign Insert 1",
+    "Invisalign Recall",
+    "Invisalign Complete",
+    "Impressions",
+    "Consultation",
+    "Hygiene",
+    "New Patient Exam",
+    "Post Op Exam",
+    "Recall Exam",
+    "Sedation",
+    "Botox",
+    "Nightguard Insert",
+    "Happy Visit",
+    "SDF Application",
+    "CBCT",
+    "Specific Exam",
+    "Emergency Exam",
+    "Appliance Adjustment",
+    "Implant Planning",
+    "Kids Hygiene 0-2",
+    "Kids Hygiene 3-7",
+    "In Office Whitenings",
+    "Bite Adjustment",
+    "Laser Desensitization"
   ],
-  "Root Canal": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin"
+  "Dr. Amber": [
+    "Implant Crown Impression",
+    "Implant Follow-up",
+    "Invisalign Insert 1",
+    "Invisalign Recall",
+    "Impressions",
+    "Consultation",
+    "Hygiene",
+    "New Patient Exam",
+    "Post Op Exam",
+    "Recall Exam",
+    "Sedation",
+    "Botox",
+    "Nightguard Insert",
+    "Happy Visit",
+    "SDF Application",
+    "CBCT",
+    "Specific Exam",
+    "Emergency Exam",
+    "Appliance Adjustment",
+    "Implant Planning",
+    "Kids Hygiene 0-2",
+    "Kids Hygiene 3-7",
+    "In Office Whitenings",
+    "Bite Adjustment",
+    "Laser Desensitization"
   ],
-  "Gum Graft": [
-    "Dr. Miekella"
+  "Dr. Kym": [
+    "Implant Crown Impression",
+    "Implant Follow-up",
+    "Invisalign Insert 1",
+    "Invisalign Recall",
+    "Impressions",
+    "Consultation",
+    "Hygiene",
+    "New Patient Exam",
+    "Post Op Exam",
+    "Recall Exam",
+    "Sedation",
+    "Botox",
+    "Nightguard Insert",
+    "Happy Visit",
+    "SDF Application",
+    "CBCT",
+    "Specific Exam",
+    "Emergency Exam",
+    "Appliance Adjustment",
+    "Implant Planning",
+    "Kids Hygiene 0-2",
+    "Kids Hygiene 3-7",
+    "In Office Whitenings",
+    "Bite Adjustment",
+    "Laser Desensitization"
   ],
-  "Extraction": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin"
-  ],
-  "Invisalign Insert 1": [
-    "Marina",
-    "Monse",
-    "Jessica",
-    "Amber",
-    "Kym",
-    "Natalia"
-  ],
-  "Invisalign Insert 2": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin"
-  ],
-  "Invisalign Recall": [
-    "Marina",
-    "Monse",
-    "Jessica",
-    "Amber",
-    "Kym",
-    "Natalia"
-  ],
-  "Invisalign Complete": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin",
-    "Marina",
-    "Monse",
-    "Jessica"
-  ],
-  "Impressions": [
-    "Marina",
-    "Monse",
-    "Jessica",
-    "Amber",
-    "Kym",
-    "Natalia"
-  ],
-  "Consultation": [
-    "Marina",
-    "Monse",
-    "Jessica",
-    "Amber",
-    "Kym",
-    "Natalia"
+  "Dr. Natalia": [
+    "Implant Crown Impression",
+    "Implant Follow-up",
+    "Invisalign Insert 1",
+    "Invisalign Recall",
+    "Impressions",
+    "Consultation",
+    "Hygiene",
+    "New Patient Exam",
+    "Post Op Exam",
+    "Recall Exam",
+    "Sedation",
+    "Botox",
+    "Nightguard Insert",
+    "Happy Visit",
+    "SDF Application",
+    "CBCT",
+    "Specific Exam",
+    "Emergency Exam",
+    "Appliance Adjustment",
+    "Implant Planning",
+    "Kids Hygiene 0-2",
+    "Kids Hygiene 3-7",
+    "In Office Whitenings",
+    "Bite Adjustment",
+    "Laser Desensitization"
   ],
   "Hygiene": [
-    "Marina",
-    "Monse",
-    "Jessica",
-    "Hygiene"
-  ],
-  "New Patient Exam": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin",
-    "Marina",
-    "Monse",
-    "Jessica",
-    "Amber",
-    "Kym",
-    "Natalia",
-    "Hygiene"
-  ],
-  "Post Op Exam": [
-    "Marina",
-    "Monse",
-    "Jessica",
-    "Amber",
-    "Kym",
-    "Natalia"
-  ],
-  "Recall Exam": [
-    "Marina",
-    "Monse",
-    "Jessica",
-    "Amber",
-    "Kym",
-    "Natalia"
-  ],
-  "Pulpectomy": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin"
-  ],
-  "Sedation": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin",
-    "Marina",
-    "Monse",
-    "Jessica",
-    "Amber",
-    "Kym",
-    "Natalia"
-  ],
-  "Botox": [
-    "Marina",
-    "Monse",
-    "Jessica",
-    "Amber",
-    "Kym",
-    "Natalia"
-  ],
-  "Nightguard Insert": [
-    "Marina",
-    "Monse",
-    "Jessica"
-  ],
-  "Happy Visit": [
-    "Marina",
-    "Monse",
-    "Jessica",
-    "Amber",
-    "Kym",
-    "Natalia"
-  ],
-  "SDF Application": [
-    "Marina",
-    "Monse",
-    "Jessica"
-  ],
-  "CBCT": [
-    "Marina",
-    "Monse",
-    "Jessica",
-    "Amber",
-    "Kym",
-    "Natalia"
-  ],
-  "Specific Exam": [
-    "Marina",
-    "Monse",
-    "Jessica",
-    "Amber",
-    "Kym",
-    "Natalia"
-  ],
-  "Emergency Exam": [
-    "Marina",
-    "Monse",
-    "Jessica",
-    "Amber",
-    "Kym",
-    "Natalia"
-  ],
-  "Appliance Adjustment": [
-    "Marina",
-    "Monse"
-  ],
-  "Implant Planning": [
-    "Marina",
-    "Monse",
-    "Jessica",
-    "Amber"
-  ],
-  "Crown Re-cement": [
-    "Marina",
-    "Monse",
-    "Jessica"
-  ],
-  "Kids Hygiene 0-2": [
-    "Marina",
-    "Monse",
-    "Jessica"
-  ],
-  "Kids Hygiene 3-7": [
-    "Marina",
-    "Monse",
-    "Jessica"
-  ],
-  "Kids Hygiene 8-11": [
-    "Hygiene"
-  ],
-  "In Office Whitenings": [
-    "Marina",
-    "Monse",
-    "Jessica"
-  ],
-  "Bite Adjustment": [
-    "Marina",
-    "Monse",
-    "Jessica",
-    "Amber",
-    "Kym",
-    "Natalia"
-  ],
-  "Laser Bacterial Reduction": [
-    "Hygiene"
-  ],
-  "Re-Eval, Pol & FL": [
-    "Hygiene"
-  ],
-  "Laser Desensitization": [
-    "Marina",
-    "Monse",
-    "Jessica",
-    "Kym",
-    "Natalia"
-  ],
-  "Surgical Debridement": [
-    "Dr. Miekella"
-  ],
-  "Socket Preservation": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin"
-  ],
-  "Sinus Lift": [
-    "Dr. Miekella"
-  ],
-  "Bone Graft": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin",
-    "Amber",
-    "Kym",
-    "Natalia"
-  ],
-  "Root Canal Treated Tooth": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin",
-    "Marina",
-    "Monse",
-    "Jessica",
-    "Amber",
-    "Kym",
-    "Natalia"
-  ],
-  "Post": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin",
-    "Marina",
-    "Monse",
-    "Jessica",
-    "Amber",
-    "Kym",
-    "Natalia"
-  ],
-  "Core & Crown Prep": [
-    "Marina",
-    "Monse",
-    "Jessica",
-    "Amber",
-    "Kym",
-    "Natalia"
-  ],
-  "Pulp Cap": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin"
-  ],
-  "Extraction (Procedure 2)": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin"
-  ],
-  "Filling (Procedure 2)": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin",
-    "Amber",
-    "Kym",
-    "Natalia"
-  ],
-  "Sedation (Procedure 2)": [
-    "Dr. Miekella",
-    "Dr. Kayla",
-    "Dr. Radin",
-    "Marina",
-    "Monse",
-    "Jessica",
-    "Amber",
-    "Kym",
-    "Natalia"
+    "Hygiene",
+    "New Patient Exam",
+    "Kids Hygiene 8-11",
+    "Laser Bacterial Reduction",
+    "Re-Eval, Pol & FL"
   ]
 }

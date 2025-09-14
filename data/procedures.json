@@ -1,5 +1,5 @@
 {
-  "Implant surgery": {
+  "Implant": {
     "assistant_time": 30.0,
     "doctor_time": 0.0,
     "total_time": 90.0,
@@ -11,7 +11,7 @@
     "total_time": 20.0,
     "section": "procedure2"
   },
-  "Crown Preparation": {
+  "Crown": {
     "assistant_time": 10.0,
     "doctor_time": 0.0,
     "total_time": 90.0,

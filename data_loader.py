@@ -61,12 +61,15 @@ class ProcedureDataLoader:
                 continue
                 
             # Check if at least one provider can perform this procedure
-            if procedure_name in self.provider_compatibility:
-                providers = self.provider_compatibility[procedure_name]
-                if providers and len(providers) > 0:
-                    available.append(procedure_name)
-                else:
-                    print(f"Skipping {procedure_name}: No providers available")
+            # Look through all providers to see if any can perform this procedure
+            procedure_available = False
+            for provider, procedures in self.provider_compatibility.items():
+                if procedure_name in procedures:
+                    procedure_available = True
+                    break
+            
+            if procedure_available:
+                available.append(procedure_name)
             else:
                 print(f"Skipping {procedure_name}: No provider compatibility data")
         
@@ -105,8 +108,8 @@ class ProcedureDataLoader:
 
     def check_provider_performs_procedure(self, provider: str, procedure: str) -> bool:
         """Check if a provider can perform a specific procedure"""
-        if procedure in self.provider_compatibility:
-            return provider in self.provider_compatibility[procedure]
+        if provider in self.provider_compatibility:
+            return procedure in self.provider_compatibility[provider]
         return True  # Default to True if no compatibility data
 
     def get_procedure_base_times(self, procedure: str) -> Dict[str, float]:
@@ -149,6 +152,98 @@ class ProcedureDataLoader:
             
         return max(0, doctor_time)  # Ensure non-negative
 
+    def _calculate_procedure_time_excel_formula(self, procedure: str, num_teeth: int = 1, 
+                                              num_surfaces: int = 1, num_quadrants: int = 1) -> Dict[str, float]:
+        """
+        Calculate procedure time using exact Excel formulas from Metadata2 sheet
+        Returns: {'assistant_time': float, 'doctor_time': float, 'total_time': float}
+        """
+        
+        # Get base assistant time from Metadata2
+        base_times = self.get_procedure_base_times(procedure)
+        assistant_time = base_times['assistant_time']
+        
+        # Calculate total time using Excel formulas
+        if procedure == 'Implant':
+            if num_teeth == 0 or num_teeth == 1:
+                total_time = 90
+            else:
+                total_time = 80 + (10 * num_teeth)
+                
+        elif procedure == 'Filling':
+            if num_surfaces == 0 or num_surfaces == 1:
+                total_time = 30
+            else:
+                if num_quadrants < 1:
+                    total_time = (3 + 0.5 * num_surfaces) * 10
+                else:
+                    total_time = (3 + 0.5 * num_surfaces + (num_quadrants - 1)) * 10
+                    
+        elif procedure == 'Crown':
+            if num_teeth == 0 or num_teeth == 1:
+                total_time = 90
+            else:
+                total_time = 90 + ((num_teeth - 1) * 30)
+                
+        elif procedure == 'Crown Delivery':
+            if num_teeth == 0 or num_teeth == 1:
+                total_time = 40
+            else:
+                total_time = 40 + ((num_teeth - 1) * 10)
+                
+        elif procedure == 'Root Canal':
+            if num_surfaces == 0 or num_surfaces == 1:
+                total_time = 60
+            else:
+                total_time = 60 + (num_surfaces - 1) * 10
+                
+        elif procedure == 'Gum Graft':
+            if num_teeth == 0 or num_teeth == 1:
+                total_time = 70
+            else:
+                total_time = 70 + (num_teeth - 1) * 20
+                
+        elif procedure == 'Extraction':
+            # Complex nested IF formula from Excel
+            if num_teeth == 0 or num_teeth == 1:
+                total_time = 50
+            elif num_teeth == 2:
+                if num_quadrants == 0 or num_quadrants == 1:
+                    total_time = 55
+                elif num_quadrants == 2:
+                    total_time = 60
+                else:
+                    total_time = 60  # Default case
+            elif num_teeth >= 3:
+                if num_quadrants <= 1:
+                    total_time = 45 + (5 * num_teeth)
+                else:
+                    total_time = 45 + (5 * num_teeth) + (5 * num_quadrants)
+            else:
+                total_time = 50  # Default case
+                
+        elif procedure == 'Pulpectomy':
+            if num_surfaces == 0 or num_surfaces == 1:
+                total_time = 50
+            else:
+                total_time = 50 + (num_surfaces - 1) * 5
+                
+        else:
+            # For procedures with fixed times, use the base total time
+            total_time = base_times['total_time']
+        
+        # Calculate doctor time
+        doctor_time = base_times['doctor_time']
+        if doctor_time == 0 or math.isnan(doctor_time):
+            # If no doctor time specified, calculate as Total - Assistant
+            doctor_time = total_time - assistant_time
+        
+        return {
+            'assistant_time': assistant_time,
+            'doctor_time': max(0, doctor_time),
+            'total_time': total_time
+        }
+
     def round_to_nearest_10(self, minutes: float) -> int:
         """
         Round to nearest 10 minutes using Excel MROUND behavior
@@ -183,62 +278,14 @@ class ProcedureDataLoader:
             num_surfaces = int(proc_data.get('num_surfaces', 1))
             num_quadrants = int(proc_data.get('num_quadrants', 1))
             
-            # Get base times from procedure data (Metadata2 equivalent)
-            base_times = self.get_procedure_base_times(procedure)
-            base_assistant = base_times['assistant_time']
-            base_doctor = base_times['doctor_time']
-            base_total = base_times['total_time']
+            # Use Excel formula calculation for accurate results
+            excel_times = self._calculate_procedure_time_excel_formula(
+                procedure, num_teeth, num_surfaces, num_quadrants
+            )
             
-            # Calculate doctor time using Excel formula logic
-            excel_doctor_time = self._calculate_doctor_time_excel_logic(procedure)
-            
-            # Start with base total time
-            adjusted_total = base_total
-            
-            # Apply teeth/surfaces/quadrants adjustments to TOTAL TIME ONLY
-            if procedure == 'Implant surgery':
-                if num_teeth > 1:
-                    teeth_adjustment = (num_teeth - 1) * 10
-                    adjusted_total += teeth_adjustment
-                
-            elif procedure == 'Filling':
-                if num_surfaces > 1:
-                    surface_adjustment = (num_surfaces - 1) * 5
-                    adjusted_total += surface_adjustment
-                
-            elif procedure == 'Crown':
-                # Crown: Base time + 30 minutes per additional tooth (FIXED)
-                if num_teeth > 1:
-                    teeth_adjustment = (num_teeth - 1) * 30
-                    adjusted_total += teeth_adjustment
-                
-            elif procedure == 'Crown Preparation':
-                # Crown Preparation: Base time + 30 minutes per additional tooth (FIXED)
-                if num_teeth > 1:
-                    teeth_adjustment = (num_teeth - 1) * 30
-                    adjusted_total += teeth_adjustment
-                
-            elif procedure == 'Crown Delivery':
-                # Crown Delivery: Base time + 10 minutes per additional tooth (FIXED)
-                if num_teeth > 1:
-                    teeth_adjustment = (num_teeth - 1) * 10
-                    adjusted_total += teeth_adjustment
-                
-            elif procedure == 'Root Canal':
-                if num_surfaces > 1:
-                    surface_adjustment = (num_surfaces - 1) * 10
-                    adjusted_total += surface_adjustment
-                
-            elif procedure == 'Extraction':
-                if num_teeth > 1:
-                    teeth_adjustment = (num_teeth - 1) * 5
-                    adjusted_total += teeth_adjustment
-                
-            else:
-                # For other procedures, use base times with simple teeth adjustment
-                if num_teeth > 1:
-                    teeth_adjustment = (num_teeth - 1) * 5
-                    adjusted_total += teeth_adjustment
+            base_assistant = excel_times['assistant_time']
+            excel_doctor_time = excel_times['doctor_time']
+            adjusted_total = excel_times['total_time']
             
             # FIXED: Apply 30% reduction for 2nd+ procedures (per procedure, not total)
             # This reduction is applied to the procedure's own calculated time
@@ -260,8 +307,8 @@ class ProcedureDataLoader:
                 'num_quadrants': num_quadrants,
                 'base_times': {
                     'assistant_time': base_assistant,
-                    'doctor_time': base_doctor,
-                    'total_time': base_total
+                    'doctor_time': excel_doctor_time,
+                    'total_time': adjusted_total
                 },
                 'adjusted_times': {
                     'assistant_time': base_assistant,
@@ -281,12 +328,6 @@ class ProcedureDataLoader:
                 if factor_data['is_multiplier']:
                     # Apply multiplier to total time
                     final_total_time *= value
-                    
-                    # Special handling for Uncomplicated / Simple - round up to next 10 minutes
-                    if factor_name == 'Uncomplicated / Simple':
-                        # Round up to the next 10 minutes
-                        final_total_time = ((final_total_time + 9) // 10) * 10
-                        print(f"Applied Uncomplicated / Simple factor: rounded up to {final_total_time} minutes")
                 else:
                     # Add time to total
                     final_total_time += value
@@ -297,18 +338,8 @@ class ProcedureDataLoader:
                 })
         
         # Calculate final times BEFORE rounding
-        # The total_adjusted_time already includes all adjustments, so we need to 
-        # proportionally distribute the adjustments between assistant and doctor times
-        if total_base_assistant_time + total_base_doctor_time > 0:
-            # Calculate the ratio of adjustments
-            total_base_time = total_base_assistant_time + total_base_doctor_time
-            adjustment_ratio = total_adjusted_time / total_base_time if total_base_time > 0 else 1
-            
-            final_assistant_time = total_base_assistant_time * adjustment_ratio
-            final_doctor_time = total_base_doctor_time * adjustment_ratio
-        else:
-            final_assistant_time = total_base_assistant_time
-            final_doctor_time = total_base_doctor_time
+        final_assistant_time = total_base_assistant_time
+        final_doctor_time = total_base_doctor_time
         
         # Round all times to nearest 10 minutes
         final_assistant_time_rounded = self.round_to_nearest_10(final_assistant_time)
