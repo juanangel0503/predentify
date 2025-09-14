@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="procedure-item border rounded p-3 mb-3">
                 <div class="row align-items-end">
                     <div class="col-md-4">
-                        <label class="form-label small">Procedure 2</label>
+                        <label class="form-label small">Procedure</label>
                         <select class="form-select procedure-select" name="procedures[${procedureCount}][procedure]" required>
                             <option value="">Select procedure...</option>
                             ${getProcedureOptions()}
