@@ -84,13 +84,11 @@ def get_procedures2_filtered(provider, procedure1):
     # Define procedure 1 to procedure 2 relationships
     procedure_relationships = {
         "Filling": ["Pulp Cap", "Sedation"],
-        "Implant surgery": ["Bone Graft", "Post", "Pulp Cap", "Root Canal Treated Tooth", "Sinus Lift", "Socket Preservation"],
-        "Root Canal": ["Post", "Pulp Cap"],
-        "Crown preparation": ["Post", "Pulp Cap"],
-        "Extraction": ["Bone Graft", "Socket Preservation"]
+        "Implant surgery": ["Bone Graft", "Post", "Pulp Cap", "Root Canal Treated Tooth", "Sinus Lift", "Socket Preservation", "Sedation"],
+        "Root Canal": ["Post", "Pulp Cap", "Sedation"],
+        "Crown preparation": ["Post", "Pulp Cap", "Sedation"],
+        "Extraction": ["Bone Graft", "Socket Preservation", "Sedation"]
     }
-    
-    # Get valid procedure 2 items for this procedure 1
     valid_procedure2_for_procedure1 = procedure_relationships.get(procedure1, [])
     
     for proc2 in valid_procedure2_for_procedure1:
