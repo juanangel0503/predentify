@@ -265,8 +265,10 @@ class ProcedureDataLoader:
                 print(f"Applied 30% reduction to procedure {proc_index + 1} ({procedure}): {adjusted_total / 0.7:.1f} → {adjusted_total:.1f}")
             
             # Add to totals
-            # Add to totals (assistant time only from first procedure)
-            if proc_index == 0:
+            # Add to totals (assistant time logic: sum all if Sedation involved, otherwise first procedure only)
+            if "Sedation" in [p["procedure"] for p in procedures]:
+                total_base_assistant_time += base_assistant
+            elif proc_index == 0:
                 total_base_assistant_time = base_assistant
             total_base_doctor_time += excel_doctor_time
             total_base_doctor_time += excel_doctor_time
