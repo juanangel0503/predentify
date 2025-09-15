@@ -1,16 +1,8 @@
 {
-  "Implant": [
-    "Dr. Miekella"
-  ],
   "Filling": [
     "Amber",
     "Dr. Kayla",
     "Dr. Miekella",
-    "Dr. Radin"
-  ],
-  "Crown": [
-    "Dr. Miekella",
-    "Dr. Kayla",
     "Dr. Radin"
   ],
   "Crown Delivery": [
@@ -306,5 +298,13 @@
     "Dr. Miekella",
     "Dr. Kayla",
     "Dr. Radin"
+  ],
+  "Crown preparation": [
+    "Dr. Miekella",
+    "Dr. Kayla",
+    "Dr. Radin"
+  ],
+  "Implant surgery": [
+    "Dr. Miekella"
   ]
 }

@@ -198,7 +198,7 @@ class ProcedureDataLoader:
             adjusted_total = base_total
             
             # Apply teeth/surfaces/quadrants adjustments to TOTAL TIME ONLY
-            if procedure == 'Implant surgery':
+            if procedure == 'Implant surgery' or procedure == 'Implant':  # alias for safety
                 if num_teeth > 1:
                     teeth_adjustment = (num_teeth - 1) * 10
                     adjusted_total += teeth_adjustment
@@ -208,14 +208,8 @@ class ProcedureDataLoader:
                     surface_adjustment = (num_surfaces - 1) * 5
                     adjusted_total += surface_adjustment
                 
-            elif procedure == 'Crown':
-                # Crown: Base time + 30 minutes per additional tooth (FIXED)
-                if num_teeth > 1:
-                    teeth_adjustment = (num_teeth - 1) * 30
-                    adjusted_total += teeth_adjustment
-                
-            elif procedure == 'Crown Preparation':
-                # Crown Preparation: Base time + 30 minutes per additional tooth (FIXED)
+            elif procedure == 'Crown preparation' or procedure == 'Crown':
+                # Crown preparation: Base time + 30 minutes per additional tooth (FIXED)
                 if num_teeth > 1:
                     teeth_adjustment = (num_teeth - 1) * 30
                     adjusted_total += teeth_adjustment
