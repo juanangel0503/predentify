@@ -9,7 +9,6 @@ class ProcedureDataLoader:
         self.procedures_data = {}
         self.mitigating_factors = []
         self.provider_compatibility = {}
-        self.procedure_relationships = {}
         self.providers = []
         self.available_procedures = []  # Only procedures that are actually available
         self.load_data()
@@ -20,8 +19,6 @@ class ProcedureDataLoader:
                 self.procedures_data = json.load(f)
             with open(os.path.join(self.data_dir, 'mitigating_factors.json'), 'r') as f:
                 self.mitigating_factors = json.load(f)
-            with open(os.path.join(self.data_dir, 'procedure_relationships.json'), 'r') as f:
-                self.procedure_relationships = json.load(f)
             with open(os.path.join(self.data_dir, 'provider_compatibility.json'), 'r') as f:
                 self.provider_compatibility = json.load(f)
             
@@ -125,11 +122,6 @@ class ProcedureDataLoader:
         """Check if a provider can perform a specific procedure"""
         if procedure in self.provider_compatibility:
             return provider in self.provider_compatibility[procedure]
-        return True  # Default to True if no compatibility data
-
-    def get_procedure_relationships(self) -> Dict[str, List[str]]:
-        """Get procedure 1 to procedure 2 relationships"""
-        return self.procedure_relationships
         return True  # Default to True if no compatibility data
 
     def get_procedure_base_times(self, procedure: str) -> Dict[str, float]:
@@ -273,11 +265,13 @@ class ProcedureDataLoader:
                 print(f"Applied 30% reduction to procedure {proc_index + 1} ({procedure}): {adjusted_total / 0.7:.1f} → {adjusted_total:.1f}")
             
             # Add to totals
-            total_base_assistant_time += base_assistant
+            # Add to totals (assistant time only from first procedure)
+            if proc_index == 0:
+                total_base_assistant_time = base_assistant
+            total_base_doctor_time += excel_doctor_time
             total_base_doctor_time += excel_doctor_time
             total_adjusted_time += adjusted_total
             
-            # Store procedure details
             procedure_details.append({
                 'procedure': procedure,
                 'num_teeth': num_teeth,
@@ -321,7 +315,8 @@ class ProcedureDataLoader:
         
         # Always round up to next 10 minutes (like CEILING function)
         final_total_time_rounded = self.round_up_to_10(final_total_time)
-        
+        # Round to nearest 10 minutes instead of always rounding up
+        final_total_time_rounded = self.round_to_nearest_10(final_total_time)
         return {
             'base_times': {
                 'assistant_time': total_base_assistant_time,
