@@ -62,6 +62,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function addProcedureRow() {
+        // Determine if this is the second procedure or beyond
+        const isSecondOrLater = procedureCount >= 1;
+        
         const procedureHtml = `
             <div class="procedure-item border rounded p-3 mb-3">
                 <div class="row align-items-end">
@@ -69,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <label class="form-label small">Procedure</label>
                         <select class="form-select procedure-select" name="procedures[${procedureCount}][procedure]" required>
                             <option value="">Select procedure...</option>
-                            ${getProcedureOptions()}
+                            ${isSecondOrLater ? "Loading procedure2 items..." : getProcedureOptions()}
                         </select>
                     </div>
                     <div class="col-md-2">
@@ -96,36 +99,57 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
         
-        proceduresContainer.insertAdjacentHTML('beforeend', procedureHtml);
+        proceduresContainer.insertAdjacentHTML("beforeend", procedureHtml);
+        
+        // If this is the second procedure or later, load procedure2 items
+        if (isSecondOrLater) {
+            const newSelect = proceduresContainer.lastElementChild.querySelector(".procedure-select");
+            getProcedure2Options().then(options => {
+                newSelect.innerHTML = "<option value="">Select procedure...</option>" + options;
+            });
+        }
+        
         procedureCount++;
-        
-        // Show remove buttons for all procedures if more than one
         updateRemoveButtons();
-        
-        // Add event listeners to new inputs
-        addProcedureEventListeners();
-        
-        // Update field visibility for new row
         updateFieldVisibility();
-        
-        // Schedule auto-calculation for new row
-        scheduleAutoCalculate();
     }
 
     // FIXED: Always return all available procedures for new rows
     function getProcedureOptions() {
         if (allProcedures.length === 0) {
-            console.warn('No procedures loaded yet, returning empty options');
-            return '';
+            console.warn("No procedures loaded yet, returning empty options");
+            return "";
         }
         
-        let options = '';
+        let options = "";
         allProcedures.forEach(procedure => {
             options += `<option value="${procedure}">${procedure}</option>`;
         });
         
         console.log(`🔄 Adding new procedure row with ${allProcedures.length} available procedures`);
         return options;
+    }
+
+    // NEW: Function to get procedure2 options for secondary procedures
+    async function getProcedure2Options() {
+        try {
+            const response = await fetch("/api/procedures2");
+            if (!response.ok) {
+                throw new Error(`Failed to load procedure2 items: ${response.status}`);
+            }
+            const procedure2Items = await response.json();
+            
+            let options = "";
+            procedure2Items.forEach(procedure => {
+                options += `<option value="${procedure}">${procedure}</option>`;
+            });
+            
+            console.log(`�� Adding procedure2 row with ${procedure2Items.length} available procedure2 items`);
+            return options;
+        } catch (error) {
+            console.error("Error loading procedure2 items:", error);
+            return "<option value="">Error loading procedures...</option>";
+        }
     }
 
     function updateRemoveButtons() {

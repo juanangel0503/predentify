@@ -69,6 +69,11 @@ def get_procedures_for_provider(provider):
             compatible_procedures.append(procedure)
     
     return jsonify(compatible_procedures)
+@app.route('/api/procedures2')
+def get_procedures2():
+    """API endpoint to get all procedure2 items (secondary procedures)"""
+    return jsonify(data_loader.get_procedures2())
+
 
 @app.route('/api/providers')
 def get_providers():

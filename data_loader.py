@@ -331,3 +331,20 @@ class ProcedureDataLoader:
         }]
         
         return self.calculate_appointment_time(procedures_data, provider, mitigating_factors)
+
+    def get_procedures2(self) -> List[str]:
+        """Get list of procedure2 items (secondary procedures)"""
+        procedure2_list = []
+        
+        for procedure_name, proc_data in self.procedures_data.items():
+            section = proc_data.get("section", "procedure1")
+            if section == "procedure2":
+                # Check if procedure has valid time data
+                if self._is_valid_procedure_data(proc_data):
+                    # Check if at least one provider can perform this procedure
+                    if procedure_name in self.provider_compatibility:
+                        providers = self.provider_compatibility[procedure_name]
+                        if providers and len(providers) > 0:
+                            procedure2_list.append(procedure_name)
+        
+        return sorted(procedure2_list)
