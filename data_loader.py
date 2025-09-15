@@ -135,19 +135,15 @@ class ProcedureDataLoader:
 
     def _calculate_doctor_time_excel_logic(self, procedure: str) -> float:
         """
-        Calculate doctor time using Excel formula logic
-        This implements the complex IF and XLOOKUP logic from Excel
+        Calculate doctor time using Excel logic: use base doctor time only.
+        If the base doctor time cell is blank/zero, doctor time is 0.
         """
         base_times = self.get_procedure_base_times(procedure)
         doctor_time = base_times['doctor_time']
-        
-        # If doctor time is 0 or NaN, calculate as Total - Assistant
-        if doctor_time == 0 or math.isnan(doctor_time):
-            assistant_time = base_times['assistant_time']
-            total_time = base_times['total_time']
-            doctor_time = total_time - assistant_time
-            
-        return max(0, doctor_time)  # Ensure non-negative
+        # No fallback to Total - Assistant; Excel uses explicit doctor time
+        if math.isnan(doctor_time) or doctor_time < 0:
+            return 0.0
+        return doctor_time
 
     def round_to_nearest_10(self, minutes: float) -> int:
         """
@@ -189,7 +185,7 @@ class ProcedureDataLoader:
             base_doctor = base_times['doctor_time']
             base_total = base_times['total_time']
             
-            # Calculate doctor time using Excel formula logic
+            # Calculate doctor time using Excel formula logic (no fallback)
             excel_doctor_time = self._calculate_doctor_time_excel_logic(procedure)
             
             # Start with base total time
@@ -294,20 +290,18 @@ class ProcedureDataLoader:
         final_assistant_time = total_base_assistant_time
         final_doctor_time = total_base_doctor_time
         
-        # Round all times to nearest 10 minutes
-        final_assistant_time_rounded = self.round_to_nearest_10(final_assistant_time)
-        final_doctor_time_rounded = self.round_to_nearest_10(final_doctor_time)
+        # Round only TOTAL time to nearest 10 minutes (Excel MROUND behavior)
         final_total_time_rounded = self.round_to_nearest_10(final_total_time)
         
         return {
             'base_times': {
-                'assistant_time': self.round_to_nearest_10(total_base_assistant_time),
-                'doctor_time': self.round_to_nearest_10(total_base_doctor_time),
-                'total_time': self.round_to_nearest_10(total_adjusted_time)
+                'assistant_time': total_base_assistant_time,
+                'doctor_time': total_base_doctor_time,
+                'total_time': total_adjusted_time
             },
             'final_times': {
-                'assistant_time': final_assistant_time_rounded,
-                'doctor_time': final_doctor_time_rounded,
+                'assistant_time': final_assistant_time,
+                'doctor_time': final_doctor_time,
                 'total_time': final_total_time_rounded
             },
             'procedure_details': procedure_details,
