@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let procedureCount = 1;
     let allProcedures = [];
     let allProviders = [];
+    let allProcedures2 = []; // Secondary procedures for additional rows
     let isDataLoaded = false;
     let autoCalculateTimeout;
     let isAutoCalculating = false;
@@ -62,9 +63,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function addProcedureRow() {
-        // Determine if this is the second procedure or beyond
-        const isSecondOrLater = procedureCount >= 1;
-        
         const procedureHtml = `
             <div class="procedure-item border rounded p-3 mb-3">
                 <div class="row align-items-end">
@@ -72,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <label class="form-label small">Procedure</label>
                         <select class="form-select procedure-select" name="procedures[${procedureCount}][procedure]" required>
                             <option value="">Select procedure...</option>
-                            ${isSecondOrLater ? "Loading procedure2 items..." : getProcedureOptions()}
+                            ${getProcedureOptions()}
                         </select>
                     </div>
                     <div class="col-md-2">
@@ -99,57 +97,39 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
         
-        proceduresContainer.insertAdjacentHTML("beforeend", procedureHtml);
-        
-        // If this is the second procedure or later, load procedure2 items
-        if (isSecondOrLater) {
-            const newSelect = proceduresContainer.lastElementChild.querySelector(".procedure-select");
-            getProcedure2Options().then(options => {
-                newSelect.innerHTML = "<option value="">Select procedure...</option>" + options;
-            });
-        }
-        
+        proceduresContainer.insertAdjacentHTML('beforeend', procedureHtml);
         procedureCount++;
+        
+        // Show remove buttons for all procedures if more than one
         updateRemoveButtons();
+        
+        // Add event listeners to new inputs
+        addProcedureEventListeners();
+        
+        // Update field visibility for new row
         updateFieldVisibility();
+        
+        // Schedule auto-calculation for new row
+        scheduleAutoCalculate();
     }
 
-    // FIXED: Always return all available procedures for new rows
+    // FIXED: Use secondary procedures for additional rows (Procedure 2)
     function getProcedureOptions() {
-        if (allProcedures.length === 0) {
-            console.warn("No procedures loaded yet, returning empty options");
+        // Use secondary procedures for additional rows
+        const proceduresToUse = allProcedures2.length > 0 ? allProcedures2 : allProcedures;
+        
+        if (proceduresToUse.length === 0) {
+            console.warn("No secondary procedures loaded yet, returning empty options");
             return "";
         }
         
         let options = "";
-        allProcedures.forEach(procedure => {
+        proceduresToUse.forEach(procedure => {
             options += `<option value="${procedure}">${procedure}</option>`;
         });
         
-        console.log(`🔄 Adding new procedure row with ${allProcedures.length} available procedures`);
+        console.log(`🔄 Adding new procedure row with ${proceduresToUse.length} secondary procedures`);
         return options;
-    }
-
-    // NEW: Function to get procedure2 options for secondary procedures
-    async function getProcedure2Options() {
-        try {
-            const response = await fetch("/api/procedures2");
-            if (!response.ok) {
-                throw new Error(`Failed to load procedure2 items: ${response.status}`);
-            }
-            const procedure2Items = await response.json();
-            
-            let options = "";
-            procedure2Items.forEach(procedure => {
-                options += `<option value="${procedure}">${procedure}</option>`;
-            });
-            
-            console.log(`�� Adding procedure2 row with ${procedure2Items.length} available procedure2 items`);
-            return options;
-        } catch (error) {
-            console.error("Error loading procedure2 items:", error);
-            return "<option value="">Error loading procedures...</option>";
-        }
     }
 
     function updateRemoveButtons() {
@@ -786,28 +766,35 @@ document.addEventListener('DOMContentLoaded', function() {
         showLoading(true);
         
         Promise.all([
-            fetch('/api/procedures').then(response => {
+            fetch("/api/procedures").then(response => {
                 if (!response.ok) {
                     throw new Error(`Failed to load procedures: ${response.status}`);
                 }
                 return response.json();
             }),
-            fetch('/api/providers').then(response => {
+            fetch("/api/procedures2").then(response => {
+                if (!response.ok) {
+                    throw new Error(`Failed to load secondary procedures: ${response.status}`);
+                }
+                return response.json();
+            }),
+            fetch("/api/providers").then(response => {
                 if (!response.ok) {
                     throw new Error(`Failed to load providers: ${response.status}`);
                 }
                 return response.json();
             })
         ])
-        .then(([procedures, providers]) => {
-            console.log('Data loaded successfully:', {
+        .then(([procedures, procedures2, providers]) => {
+            console.log("Data loaded successfully:", {
                 procedures: procedures.length,
+                procedures2: procedures2.length,
                 providers: providers.length
             });
             
             allProcedures = procedures;
+            allProcedures2 = procedures2;
             allProviders = providers;
-            isDataLoaded = true;
             
             // Initialize procedure options (load all procedures initially)
             updateProcedureOptions('');
