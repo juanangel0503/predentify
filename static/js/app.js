@@ -212,39 +212,50 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("✅ Form fields reset to default values and additional procedures removed");
     }
     function addProcedureEventListeners() {
-        // Remove procedure buttons
-        document.querySelectorAll('.remove-procedure').forEach(btn => {
-            btn.addEventListener('click', function() {
+        // Get the last added procedure item (the one we just added)
+        const procedureItems = document.querySelectorAll(".procedure-item");
+        const lastProcedureItem = procedureItems[procedureItems.length - 1];
+        
+        if (!lastProcedureItem) return;
+        
+        // Remove procedure button for the new row
+        const removeBtn = lastProcedureItem.querySelector(".remove-procedure");
+        if (removeBtn) {
+            removeBtn.addEventListener("click", function() {
                 removeProcedureRow(this);
             });
-        });
-
+        }
+        
         // Teeth input changes - with auto-calculation
-        document.querySelectorAll('.teeth-input').forEach(input => {
-            input.addEventListener('input', function() {
+        const teethInput = lastProcedureItem.querySelector(".teeth-input");
+        if (teethInput) {
+            teethInput.addEventListener("input", function() {
                 updateFieldVisibility();
                 scheduleAutoCalculate();
             });
-        });
-
+        }
+        
         // Quadrants input changes - with auto-calculation
-        document.querySelectorAll('.quadrants-input').forEach(input => {
-            input.addEventListener('input', function() {
+        const quadrantsInput = lastProcedureItem.querySelector(".quadrants-input");
+        if (quadrantsInput) {
+            quadrantsInput.addEventListener("input", function() {
                 scheduleAutoCalculate();
             });
-        });
-
+        }
+        
         // Surfaces input changes - with auto-calculation
-        document.querySelectorAll('.surfaces-input').forEach(input => {
-            input.addEventListener('input', function() {
+        const surfacesInput = lastProcedureItem.querySelector(".surfaces-input");
+        if (surfacesInput) {
+            surfacesInput.addEventListener("input", function() {
                 scheduleAutoCalculate();
             });
-        });
-
+        }
+        
         // Procedure selection changes - with auto-calculation, provider filtering, and field reset
-        document.querySelectorAll('.procedure-select').forEach(select => {
-            select.addEventListener('change', function() {
-                console.log('🔄 Procedure changed to:', this.value);
+        const procedureSelect = lastProcedureItem.querySelector(".procedure-select");
+        if (procedureSelect) {
+            procedureSelect.addEventListener("change", function() {
+                console.log("🔄 Procedure changed to:", this.value);
                 updateFieldVisibility();
                 // FIXED: Pass the selected procedure value to updateProviderOptions
                 updateProviderOptions(this.value);
@@ -257,7 +268,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 scheduleAutoCalculate();
             });
-        });
+        }
     }
 
     // Enhanced auto-calculation with better feedback and debouncing
