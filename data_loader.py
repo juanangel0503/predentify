@@ -258,7 +258,7 @@ class ProcedureDataLoader:
             # FIXED: Apply 30% reduction for 2nd+ procedures (per procedure, not total)
             # This reduction is applied to the procedure's own calculated time
             # EXCEPTION: Sedation should not have 30% reduction applied
-            if proc_index > 0 and procedure != "Sedation":  # Second procedure and beyond, but not Sedation
+            if proc_index > 0 and procedure not in ["Sedation", "Socket Preservation"]:  # Second procedure and beyond, but not Sedation or Socket Preservation
                 # Reduce by 30% (multiply by 0.7)
                 adjusted_total = adjusted_total * 0.7
                 print(f"Applied 30% reduction to procedure {proc_index + 1} ({procedure}): {adjusted_total / 0.7:.1f} → {adjusted_total:.1f}")
