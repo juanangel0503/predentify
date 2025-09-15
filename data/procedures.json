@@ -102,8 +102,8 @@
     "section": "procedure1"
   },
   "Sedation": {
-    "assistant_time": 60.0,
-    "doctor_time": 0.0,
+    "assistant_time": 55.0,
+    "doctor_time": 5.0,
     "total_time": 60.0,
     "section": "procedure1"
   },
