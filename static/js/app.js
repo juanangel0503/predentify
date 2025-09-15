@@ -11,7 +11,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let procedureCount = 1;
     let allProcedures = [];
     let allProviders = [];
-    let allProcedures2 = []; // Secondary procedures for additional rows
     let isDataLoaded = false;
     let autoCalculateTimeout;
     let isAutoCalculating = false;
@@ -62,7 +61,8 @@ document.addEventListener('DOMContentLoaded', function() {
         addProcedureRow();
     });
 
-    function addProcedureRow() {
+    async function addProcedureRow() {
+        const procedure2Options = await getProcedure2Options();
         const procedureHtml = `
             <div class="procedure-item border rounded p-3 mb-3">
                 <div class="row align-items-end">
@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <label class="form-label small">Procedure</label>
                         <select class="form-select procedure-select" name="procedures[${procedureCount}][procedure]" required>
                             <option value="">Select procedure...</option>
-                            ${getProcedureOptions()}
+                            ${procedure2Options}
                         </select>
                     </div>
                     <div class="col-md-2">
@@ -112,24 +112,53 @@ document.addEventListener('DOMContentLoaded', function() {
         // Schedule auto-calculation for new row
         scheduleAutoCalculate();
     }
-
-    // FIXED: Use secondary procedures for additional rows (Procedure 2)
-    function getProcedureOptions() {
-        // Use secondary procedures for additional rows
-        const proceduresToUse = allProcedures2.length > 0 ? allProcedures2 : allProcedures;
         
-        if (proceduresToUse.length === 0) {
-            console.warn("No secondary procedures loaded yet, returning empty options");
-            return "";
+        // Add event listeners to new inputs
+        addProcedureEventListeners();
+        
+        // Update field visibility for new row
+        updateFieldVisibility();
+        
+        // Schedule auto-calculation for new row
+        scheduleAutoCalculate();
+    }
+
+    // FIXED: Always return all available procedures for new rows
+    function getProcedureOptions() {
+        if (allProcedures.length === 0) {
+            console.warn('No procedures loaded yet, returning empty options');
+            return '';
         }
         
-        let options = "";
-        proceduresToUse.forEach(procedure => {
+        let options = '';
+        allProcedures.forEach(procedure => {
             options += `<option value="${procedure}">${procedure}</option>`;
         });
         
-        console.log(`🔄 Adding new procedure row with ${proceduresToUse.length} secondary procedures`);
+        console.log(`🔄 Adding new procedure row with ${allProcedures.length} available procedures`);
         return options;
+
+    // NEW: Function to get procedure2 options for secondary procedures
+    async function getProcedure2Options() {
+        try {
+            const response = await fetch('/api/procedures2');
+            if (!response.ok) {
+                throw new Error(`Failed to load procedure2 items: ${response.status}`);
+            }
+            const procedure2Items = await response.json();
+            
+            let options = '';
+            procedure2Items.forEach(procedure => {
+                options += `<option value="${procedure}">${procedure}</option>`;
+            });
+            
+            console.log(`🔄 Adding procedure2 row with ${procedure2Items.length} available procedure2 items`);
+            return options;
+        } catch (error) {
+            console.error('Error loading procedure2 items:', error);
+            return '<option value="">Error loading procedures</option>';
+        }
+    }
     }
 
     function updateRemoveButtons() {
@@ -432,40 +461,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // FIXED: Enhanced procedure dropdown population with better logic
     function populateProcedureDropdowns(procedures) {
-        // FIXED: Only update the first procedure dropdown (Procedure 1), not additional ones
-        const procedureSelects = document.querySelectorAll(".procedure-select");
-        const firstProcedureSelect = procedureSelects[0]; // Only the first one
+        const procedureSelects = document.querySelectorAll('.procedure-select');
         
-        if (firstProcedureSelect) {
-            const currentValue = firstProcedureSelect.value;
+        procedureSelects.forEach(select => {
+            const currentValue = select.value;
             
             // Clear and repopulate options
-            firstProcedureSelect.innerHTML = "<option value="">Select procedure...</option>";
+            select.innerHTML = '<option value="">Select procedure...</option>';
             
             procedures.forEach(procedure => {
-                const option = document.createElement("option");
+                const option = document.createElement('option');
                 option.value = procedure;
                 option.textContent = procedure;
-                firstProcedureSelect.appendChild(option);
+                select.appendChild(option);
             });
             
-            // Restore previous selection if it is still available
+            // Restore previous selection if it's still available
             if (currentValue && procedures.includes(currentValue)) {
-                firstProcedureSelect.value = currentValue;
+                select.value = currentValue;
             } else if (currentValue && !procedures.includes(currentValue)) {
                 // Clear invalid selection
-                firstProcedureSelect.value = "";
-                updateProviderOptions(""); // Reset provider options
+                select.value = '';
+                updateProviderOptions(''); // Reset provider options
             }
-        }
+        });
         
         // Only update field visibility if we have procedure items
-        if (document.querySelectorAll(".procedure-item").length > 0) {
-            updateFieldVisibility();
-        }
-        
-        console.log(`🔄 Updated first procedure dropdown with ${procedures.length} procedures`);
-    }
+        if (document.querySelectorAll('.procedure-item').length > 0) {
             updateFieldVisibility();
         }
         
@@ -773,35 +795,28 @@ document.addEventListener('DOMContentLoaded', function() {
         showLoading(true);
         
         Promise.all([
-            fetch("/api/procedures").then(response => {
+            fetch('/api/procedures').then(response => {
                 if (!response.ok) {
                     throw new Error(`Failed to load procedures: ${response.status}`);
                 }
                 return response.json();
             }),
-            fetch("/api/procedures2").then(response => {
-                if (!response.ok) {
-                    throw new Error(`Failed to load secondary procedures: ${response.status}`);
-                }
-                return response.json();
-            }),
-            fetch("/api/providers").then(response => {
+            fetch('/api/providers').then(response => {
                 if (!response.ok) {
                     throw new Error(`Failed to load providers: ${response.status}`);
                 }
                 return response.json();
             })
         ])
-        .then(([procedures, procedures2, providers]) => {
-            console.log("Data loaded successfully:", {
+        .then(([procedures, providers]) => {
+            console.log('Data loaded successfully:', {
                 procedures: procedures.length,
-                procedures2: procedures2.length,
                 providers: providers.length
             });
             
             allProcedures = procedures;
-            allProcedures2 = procedures2;
             allProviders = providers;
+            isDataLoaded = true;
             
             // Initialize procedure options (load all procedures initially)
             updateProcedureOptions('');
