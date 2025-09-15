@@ -84,7 +84,7 @@ def get_procedures2_filtered(provider, procedure1):
     # Define procedure 1 to procedure 2 relationships
     procedure_relationships = {
         "Filling": ["Pulp Cap", "Sedation"],
-        "Implant surgery": ["Bone Graft", "Post", "Pulp Cap", "Root Canal Treated Tooth", "Sinus Lift", "Socket Preservation", "Sedation", "Filling"],
+        "Implant surgery": ["Bone Graft", "Post", "Pulp Cap", "Root Canal Treated Tooth", "Sinus Lift", "Socket Preservation", "Sedation"],
         "Root Canal": ["Post", "Pulp Cap", "Sedation", "Filling"],
         "Crown preparation": ["Post", "Pulp Cap", "Sedation", "Filling"],
         "Extraction": ["Bone Graft", "Socket Preservation", "Sedation", "Filling"]
