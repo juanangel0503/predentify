@@ -1,0 +1,38 @@
+[
+  {
+    "Provider": NaN,
+    "Procedure 1": NaN,
+    "Procedure 2": NaN,
+    "Mitigating Factors": NaN,
+    "No. Teeth": NaN,
+    "No. Surfaces / Canals": NaN,
+    "No. Quadrants": NaN
+  },
+  {
+    "Provider": NaN,
+    "Procedure 1": NaN,
+    "Procedure 2": NaN,
+    "Mitigating Factors": NaN,
+    "No. Teeth": NaN,
+    "No. Surfaces / Canals": NaN,
+    "No. Quadrants": NaN
+  },
+  {
+    "Provider": "Total Time (Mins)",
+    "Procedure 1": "Assistant Time (Mins)",
+    "Procedure 2": "Doctor Time (Mins)",
+    "Mitigating Factors": NaN,
+    "No. Teeth": NaN,
+    "No. Surfaces / Canals": NaN,
+    "No. Quadrants": NaN
+  },
+  {
+    "Provider": 0,
+    "Procedure 1": 0,
+    "Procedure 2": 0,
+    "Mitigating Factors": NaN,
+    "No. Teeth": NaN,
+    "No. Surfaces / Canals": NaN,
+    "No. Quadrants": NaN
+  }
+]

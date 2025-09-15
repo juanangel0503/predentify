@@ -81,21 +81,8 @@ def get_procedures2_filtered(provider, procedure1):
     all_procedure2 = data_loader.get_procedures2()
     compatible_procedure2 = []
     
-    # Define procedure 1 to procedure 2 relationships
-    procedure_relationships = {
-        "Implant Crown Impression": ["Filling", "Sedation"],
-        "Filling": ["Pulp Cap", "Sedation"],
-        "Implant surgery": ["Bone Graft", "Post", "Pulp Cap", "Root Canal Treated Tooth", "Sinus Lift", "Socket Preservation", "Sedation"],
-        "Root Canal": ["Post", "Pulp Cap", "Sedation", "Filling"],
-        "Crown preparation": ["Post", "Pulp Cap", "Sedation", "Filling"],
-        "Gum Graft": ["Sedation"],
-        "Crown Delivery": ["Sedation"],
-        "Pulpectomy": ["Sedation"],
-        "New Patient Exam": ["Filling", "Sedation"],
-        "Emergency Exam": ["Filling", "Sedation"],
-        "Consultation": ["Filling", "Sedation"],
-        "Extraction": ["Bone Graft", "Socket Preservation", "Sedation", "Filling"]
-    }
+    # Get procedure 1 to procedure 2 relationships from JSON data
+    procedure_relationships = data_loader.get_procedure_relationships()
     # Get valid procedure 2 items for this procedure 1
     valid_procedure2_for_procedure1 = procedure_relationships.get(procedure1, [])
     for proc2 in valid_procedure2_for_procedure1:

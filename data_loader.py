@@ -9,6 +9,7 @@ class ProcedureDataLoader:
         self.procedures_data = {}
         self.mitigating_factors = []
         self.provider_compatibility = {}
+        self.procedure_relationships = {}
         self.providers = []
         self.available_procedures = []  # Only procedures that are actually available
         self.load_data()
@@ -19,6 +20,8 @@ class ProcedureDataLoader:
                 self.procedures_data = json.load(f)
             with open(os.path.join(self.data_dir, 'mitigating_factors.json'), 'r') as f:
                 self.mitigating_factors = json.load(f)
+            with open(os.path.join(self.data_dir, 'procedure_relationships.json'), 'r') as f:
+                self.procedure_relationships = json.load(f)
             with open(os.path.join(self.data_dir, 'provider_compatibility.json'), 'r') as f:
                 self.provider_compatibility = json.load(f)
             
@@ -122,6 +125,11 @@ class ProcedureDataLoader:
         """Check if a provider can perform a specific procedure"""
         if procedure in self.provider_compatibility:
             return provider in self.provider_compatibility[procedure]
+        return True  # Default to True if no compatibility data
+
+    def get_procedure_relationships(self) -> Dict[str, List[str]]:
+        """Get procedure 1 to procedure 2 relationships"""
+        return self.procedure_relationships
         return True  # Default to True if no compatibility data
 
     def get_procedure_base_times(self, procedure: str) -> Dict[str, float]:
