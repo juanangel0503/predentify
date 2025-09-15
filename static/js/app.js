@@ -57,68 +57,80 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Add procedure functionality
-    addProcedureBtn.addEventListener('click', function() {
-        addProcedureRow();
+    addProcedureBtn.addEventListener('click', async function() {
+        await addProcedureRow();
     });
 
     async function addProcedureRow() {
-        const procedure2Options = await getProcedure2Options();
-        const procedureHtml = `
-            <div class="procedure-item border rounded p-3 mb-3">
-                <div class="row align-items-end">
-                    <div class="col-md-4">
-                        <label class="form-label small">Procedure</label>
-                        <select class="form-select procedure-select" name="procedures[${procedureCount}][procedure]" required>
-                            <option value="">Select procedure...</option>
-                            ${procedure2Options}
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label small">Teeth</label>
-                        <input type="number" class="form-control teeth-input" name="procedures[${procedureCount}][num_teeth]" 
-                               value="1" min="1" max="32" placeholder="1">
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label small quadrants-label">Quadrants</label>
-                        <input type="number" class="form-control quadrants-input" name="procedures[${procedureCount}][num_quadrants]" 
-                               value="1" min="1" max="4" placeholder="1" style="display: none;">
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label small surfaces-canals-label">Surfaces/Canals</label>
-                        <input type="number" class="form-control surfaces-input" name="procedures[${procedureCount}][num_surfaces]" 
-                               value="1" min="1" max="10" placeholder="1" style="display: none;">
-                    </div>
-                    <div class="col-md-2">
-                        <button type="button" class="btn btn-outline-danger btn-sm remove-procedure">
-                            <i class="fas fa-trash"></i>
-                        </button>
+        try {
+            // Fetch procedure 2 items from API
+            const response = await fetch('/api/procedures2');
+            if (!response.ok) {
+                throw new Error(`Failed to load procedure2 items: ${response.status}`);
+            }
+            const procedure2Items = await response.json();
+            
+            // Generate options for procedure 2 items
+            let procedure2Options = '';
+            procedure2Items.forEach(procedure => {
+                procedure2Options += `<option value="${procedure}">${procedure}</option>`;
+            });
+            
+            const procedureHtml = `
+                <div class="procedure-item border rounded p-3 mb-3">
+                    <div class="row align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label small">Procedure</label>
+                            <select class="form-select procedure-select" name="procedures[${procedureCount}][procedure]" required>
+                                <option value="">Select procedure...</option>
+                                ${procedure2Options}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small">Teeth</label>
+                            <input type="number" class="form-control teeth-input" name="procedures[${procedureCount}][num_teeth]" 
+                                   value="1" min="1" max="32" placeholder="1">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small quadrants-label">Quadrants</label>
+                            <input type="number" class="form-control quadrants-input" name="procedures[${procedureCount}][num_quadrants]" 
+                                   value="1" min="1" max="4" placeholder="1" style="display: none;">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small surfaces-canals-label">Surfaces/Canals</label>
+                            <input type="number" class="form-control surfaces-input" name="procedures[${procedureCount}][num_surfaces]" 
+                                   value="1" min="1" max="10" placeholder="1" style="display: none;">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-outline-danger btn-sm remove-procedure">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `;
-        
-        proceduresContainer.insertAdjacentHTML('beforeend', procedureHtml);
-        procedureCount++;
-        
-        // Show remove buttons for all procedures if more than one
-        updateRemoveButtons();
-        
-        // Add event listeners to new inputs
-        addProcedureEventListeners();
-        
-        // Update field visibility for new row
-        updateFieldVisibility();
-        
-        // Schedule auto-calculation for new row
-        scheduleAutoCalculate();
+            `;
+            
+            proceduresContainer.insertAdjacentHTML('beforeend', procedureHtml);
+            procedureCount++;
+            
+            console.log(`🔄 Adding procedure2 row with ${procedure2Items.length} available procedure2 items`);
+            
+            // Show remove buttons for all procedures if more than one
+            updateRemoveButtons();
+            
+            // Add event listeners to new inputs
+            addProcedureEventListeners();
+            
+            // Update field visibility for new row
+            updateFieldVisibility();
+            
+            // Schedule auto-calculation for new row
+            scheduleAutoCalculate();
+        } catch (error) {
+            console.error('Error loading procedure2 items:', error);
+            alert('Error loading additional procedures. Please try again.');
+        }
     }
-        
-        // Add event listeners to new inputs
-        addProcedureEventListeners();
-        
-        // Update field visibility for new row
-        updateFieldVisibility();
-        
         // Schedule auto-calculation for new row
         scheduleAutoCalculate();
     }
@@ -137,28 +149,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         console.log(`🔄 Adding new procedure row with ${allProcedures.length} available procedures`);
         return options;
-
-    // NEW: Function to get procedure2 options for secondary procedures
-    async function getProcedure2Options() {
-        try {
-            const response = await fetch('/api/procedures2');
-            if (!response.ok) {
-                throw new Error(`Failed to load procedure2 items: ${response.status}`);
-            }
-            const procedure2Items = await response.json();
-            
-            let options = '';
-            procedure2Items.forEach(procedure => {
-                options += `<option value="${procedure}">${procedure}</option>`;
-            });
-            
-            console.log(`🔄 Adding procedure2 row with ${procedure2Items.length} available procedure2 items`);
-            return options;
-        } catch (error) {
-            console.error('Error loading procedure2 items:', error);
-            return '<option value="">Error loading procedures</option>';
-        }
-    }
     }
 
     function updateRemoveButtons() {
