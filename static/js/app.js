@@ -64,9 +64,10 @@ document.addEventListener('DOMContentLoaded', function() {
     async function addProcedureRow() {
         try {
             // Fetch procedure 2 items from API
-            const response = await fetch('/api/procedures2');
+            let apiEndpoint = procedureCount === 0 ? '/api/procedures' : '/api/procedures2';
+            const response = await fetch(apiEndpoint);
             if (!response.ok) {
-                throw new Error(`Failed to load procedure2 items: ${response.status}`);
+                throw new Error(`Failed to load procedure items: ${response.status}`);
             }
             const procedure2Items = await response.json();
             
@@ -113,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function() {
             proceduresContainer.insertAdjacentHTML('beforeend', procedureHtml);
             procedureCount++;
             
-            console.log(`🔄 Adding procedure2 row with ${procedure2Items.length} available procedure2 items`);
+            console.log(`🔄 Adding procedure row with ${procedure2Items.length} available procedure2 items`);
             
             // Show remove buttons for all procedures if more than one
             updateRemoveButtons();
