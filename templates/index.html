@@ -72,6 +72,9 @@
                                                     <label class="form-label small">Procedure</label>
                                                     <select class="form-select procedure-select" name="procedures[0][procedure]" required>
                                                         <option value="">Select procedure...</option>
+                                                        {% for procedure in procedures %}
+                                                        <option value="{{ procedure }}">{{ procedure }}</option>
+                                                        {% endfor %}
                                                     </select>
                                                 </div>
                                                 <div class="col-md-2">

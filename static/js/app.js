@@ -288,27 +288,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // Check if procedure is in exclusion list
             const isExcluded = excludedFromDetailPrompts.includes(procedure);
             
-            // Special handling for Sedation - always 60 minutes, no tooth options
-            if (procedure === 'Sedation') {
-                teethInput.style.display = 'none';
-                quadrantsInput.style.display = 'none';
-                surfacesInput.style.display = 'none';
-                if (quadrantsLabel) quadrantsLabel.style.display = 'none';
-                if (surfacesCanalsLabel) surfacesCanalsLabel.style.display = 'none';
-                
-                // Hide the teeth label as well
-                const teethLabel = item.querySelector('label[for*="num_teeth"]');
-                if (teethLabel) {
-                    teethLabel.style.display = 'none';
-                }
-                
-                // Set teeth to 1 for calculation purposes
-                teethInput.value = 1;
-                
-                console.log('Procedure "Sedation" - fixed 60 minutes, no tooth options');
-                return;
-            }
-            
             if (isExcluded) {
                 // Hide all detail fields for excluded procedures
                 teethInput.style.display = 'none';
@@ -547,13 +526,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             const procedure = procedureSelect.value;
-            
-            // FIXED: Skip empty procedure selections
-            if (!procedure || procedure.trim() === '') {
-                console.log(`Skipping procedure item ${index}: empty procedure selection`);
-                return; // Skip this item
-            }
-            
             const isExcluded = excludedFromDetailPrompts.includes(procedure);
             
             if (isExcluded) {
