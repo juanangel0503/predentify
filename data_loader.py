@@ -193,6 +193,9 @@ class ProcedureDataLoader:
         if mitigating_factors is None:
             mitigating_factors = []
             
+        # Check if Sedation is involved for assistant time calculation
+        has_sedation = any(p["procedure"] == "Sedation" for p in procedures)
+        
         total_base_assistant_time = 0.0
         total_base_doctor_time = 0.0
         total_adjusted_time = 0.0
@@ -262,15 +265,13 @@ class ProcedureDataLoader:
                 # Reduce by 30% (multiply by 0.7)
                 adjusted_total = adjusted_total * 0.7
                 print(f"Applied 30% reduction to procedure {proc_index + 1} ({procedure}): {adjusted_total / 0.7:.1f} → {adjusted_total:.1f}")
-                print(f"Applied 30% reduction to procedure {proc_index + 1} ({procedure}): {adjusted_total / 0.7:.1f} → {adjusted_total:.1f}")
             
             # Add to totals
             # Add to totals (assistant time logic: sum all if Sedation involved, otherwise first procedure only)
-            if "Sedation" in [p["procedure"] for p in procedures]:
+            if has_sedation:
                 total_base_assistant_time += base_assistant
             elif proc_index == 0:
                 total_base_assistant_time = base_assistant
-            total_base_doctor_time += excel_doctor_time
             total_base_doctor_time += excel_doctor_time
             total_adjusted_time += adjusted_total
             
