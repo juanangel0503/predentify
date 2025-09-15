@@ -125,10 +125,14 @@ class ProcedureDataLoader:
         return True  # Default to True if no compatibility data
 
     def get_procedure_base_times(self, procedure: str) -> Dict[str, float]:
-        """Get base times for a procedure"""
-        if procedure not in self.procedures_data:
-            return {'assistant_time': 0.0, 'doctor_time': 0.0, 'total_time': 0.0}
+        # Handle aliases
+        if procedure == "Implant":
+            procedure = "Implant surgery"
+        elif procedure == "Crown":
+            procedure = "Crown preparation"
         
+        if procedure not in self.procedures_data:
+            return {"assistant_time": 0.0, "doctor_time": 0.0, "total_time": 0.0}
         proc_data = self.procedures_data[procedure]
         assistant_time = float(proc_data.get('assistant_time', 0))
         doctor_time = float(proc_data.get('doctor_time', 0))
@@ -305,11 +309,8 @@ class ProcedureDataLoader:
         final_assistant_time = total_base_assistant_time
         final_doctor_time = total_base_doctor_time
         
-        # If 'Uncomplicated / Simple' is selected, round UP to next 10; otherwise MROUND to 10
-        if any(f == 'Uncomplicated / Simple' for f in mitigating_factors):
-            final_total_time_rounded = self.round_up_to_10(final_total_time)
-        else:
-            final_total_time_rounded = self.round_to_nearest_10(final_total_time)
+        # Always round up to next 10 minutes (like CEILING function)
+        final_total_time_rounded = self.round_up_to_10(final_total_time)
         
         return {
             'base_times': {
