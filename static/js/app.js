@@ -178,26 +178,39 @@ document.addEventListener('DOMContentLoaded', function() {
         scheduleAutoCalculate(); // Recalculate after removal
     }
 
-    // NEW: Reset form fields to default values
+    // NEW: Reset form fields to default values and remove additional procedures
     function resetFormFields() {
-        console.log('🔄 Resetting form fields to default values');
+        console.log("🔄 Resetting form fields to default values and removing additional procedures");
         
-        document.querySelectorAll('.procedure-item').forEach(item => {
-            const teethInput = item.querySelector('.teeth-input');
-            const quadrantsInput = item.querySelector('.quadrants-input');
-            const surfacesInput = item.querySelector('.surfaces-input');
+        // Remove all additional procedure rows (keep only the first one)
+        const procedureItems = document.querySelectorAll(".procedure-item");
+        for (let i = procedureItems.length - 1; i > 0; i--) {
+            procedureItems[i].remove();
+        }
+        
+        // Reset procedure count to 1
+        procedureCount = 1;
+        
+        // Reset the first procedure row to default values
+        const firstProcedureItem = document.querySelector(".procedure-item");
+        if (firstProcedureItem) {
+            const teethInput = firstProcedureItem.querySelector(".teeth-input");
+            const quadrantsInput = firstProcedureItem.querySelector(".quadrants-input");
+            const surfacesInput = firstProcedureItem.querySelector(".surfaces-input");
             
-            if (teethInput) teethInput.value = '1';
-            if (quadrantsInput) quadrantsInput.value = '1';
-            if (surfacesInput) surfacesInput.value = '1';
-        });
+            if (teethInput) teethInput.value = "1";
+            if (quadrantsInput) quadrantsInput.value = "1";
+            if (surfacesInput) surfacesInput.value = "1";
+        }
+        
+        // Update remove buttons visibility
+        updateRemoveButtons();
         
         // Clear results
-        resultsDiv.innerHTML = '';
+        resultsDiv.innerHTML = "";
         
-        console.log('✅ Form fields reset to default values');
+        console.log("✅ Form fields reset to default values and additional procedures removed");
     }
-
     function addProcedureEventListeners() {
         // Remove procedure buttons
         document.querySelectorAll('.remove-procedure').forEach(btn => {
