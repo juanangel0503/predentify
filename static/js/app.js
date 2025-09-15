@@ -248,8 +248,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateFieldVisibility();
                 // FIXED: Pass the selected procedure value to updateProviderOptions
                 updateProviderOptions(this.value);
-                // NEW: Reset form fields when procedure changes
-                resetFormFields();
+                // NEW: Reset form fields only when the FIRST procedure changes
+                if (this.name === "procedures[0][procedure]") {
+                    console.log("🔄 First procedure changed, resetting additional procedures");
+                    resetFormFields();
+                } else {
+                    console.log("🔄 Additional procedure changed, no reset needed");
+                }
                 scheduleAutoCalculate();
             });
         });
