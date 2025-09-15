@@ -51,10 +51,16 @@ class ProcedureDataLoader:
         1. Valid (have proper time data)
         2. Available (have at least one provider who can perform them)
         3. Active (not deprecated or inactive)
+        4. Primary procedures only (exclude secondary-only procedures like Procedure 2 items)
         """
         available = []
         
         for procedure_name, proc_data in self.procedures_data.items():
+            # Exclude secondary-only procedures from the main list
+            section = proc_data.get('section', 'procedure1')
+            if section == 'procedure2':
+                continue
+
             # Check if procedure has valid time data
             if not self._is_valid_procedure_data(proc_data):
                 print(f"Skipping {procedure_name}: Invalid time data")
