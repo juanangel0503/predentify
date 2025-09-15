@@ -432,33 +432,40 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // FIXED: Enhanced procedure dropdown population with better logic
     function populateProcedureDropdowns(procedures) {
-        const procedureSelects = document.querySelectorAll('.procedure-select');
+        // FIXED: Only update the first procedure dropdown (Procedure 1), not additional ones
+        const procedureSelects = document.querySelectorAll(".procedure-select");
+        const firstProcedureSelect = procedureSelects[0]; // Only the first one
         
-        procedureSelects.forEach(select => {
-            const currentValue = select.value;
+        if (firstProcedureSelect) {
+            const currentValue = firstProcedureSelect.value;
             
             // Clear and repopulate options
-            select.innerHTML = '<option value="">Select procedure...</option>';
+            firstProcedureSelect.innerHTML = "<option value="">Select procedure...</option>";
             
             procedures.forEach(procedure => {
-                const option = document.createElement('option');
+                const option = document.createElement("option");
                 option.value = procedure;
                 option.textContent = procedure;
-                select.appendChild(option);
+                firstProcedureSelect.appendChild(option);
             });
             
-            // Restore previous selection if it's still available
+            // Restore previous selection if it is still available
             if (currentValue && procedures.includes(currentValue)) {
-                select.value = currentValue;
+                firstProcedureSelect.value = currentValue;
             } else if (currentValue && !procedures.includes(currentValue)) {
                 // Clear invalid selection
-                select.value = '';
-                updateProviderOptions(''); // Reset provider options
+                firstProcedureSelect.value = "";
+                updateProviderOptions(""); // Reset provider options
             }
-        });
+        }
         
         // Only update field visibility if we have procedure items
-        if (document.querySelectorAll('.procedure-item').length > 0) {
+        if (document.querySelectorAll(".procedure-item").length > 0) {
+            updateFieldVisibility();
+        }
+        
+        console.log(`🔄 Updated first procedure dropdown with ${procedures.length} procedures`);
+    }
             updateFieldVisibility();
         }
         
