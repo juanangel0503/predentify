@@ -162,6 +162,12 @@ class ProcedureDataLoader:
         # Use math.floor with +0.5 to implement "round half away from zero"
         return int(math.floor(minutes / 10 + 0.5) * 10)
 
+    def round_up_to_10(self, minutes: float) -> int:
+        """Always round up to the next multiple of 10 (CEILING to 10)."""
+        if math.isnan(minutes) or minutes < 0:
+            return 0
+        return int(math.ceil(minutes / 10.0) * 10)
+
     def calculate_appointment_time(self, procedures: List[Dict], provider: str, 
                                  mitigating_factors: List[str] = None) -> Dict[str, Any]:
         """
@@ -290,8 +296,11 @@ class ProcedureDataLoader:
         final_assistant_time = total_base_assistant_time
         final_doctor_time = total_base_doctor_time
         
-        # Round only TOTAL time to nearest 10 minutes (Excel MROUND behavior)
-        final_total_time_rounded = self.round_to_nearest_10(final_total_time)
+        # If 'Uncomplicated / Simple' is selected, round UP to next 10; otherwise MROUND to 10
+        if any(f == 'Uncomplicated / Simple' for f in mitigating_factors):
+            final_total_time_rounded = self.round_up_to_10(final_total_time)
+        else:
+            final_total_time_rounded = self.round_to_nearest_10(final_total_time)
         
         return {
             'base_times': {
