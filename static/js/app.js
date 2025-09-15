@@ -131,10 +131,6 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Error loading additional procedures. Please try again.');
         }
     }
-        // Schedule auto-calculation for new row
-        scheduleAutoCalculate();
-    }
-
     // FIXED: Always return all available procedures for new rows
     function getProcedureOptions() {
         if (allProcedures.length === 0) {
