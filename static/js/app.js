@@ -63,9 +63,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function addProcedureRow() {
         try {
-            // Fetch procedure 2 items from API
-            let apiEndpoint = procedureCount === 0 ? '/api/procedures' : '/api/procedures2';
+            let apiEndpoint, logMessage;
+            
+            // Determine which procedures to load based on order
+            if (procedureCount === 0) {
+                // First procedure: load procedure 1 items
+                apiEndpoint = '/api/procedures';
+                logMessage = 'procedure1';
+            } else {
+                // Second and subsequent procedures: load procedure 2 items filtered by provider and procedure 1
+                const providerSelect = document.getElementById('provider');
+                const firstProcedureSelect = document.querySelector('.procedure-select[name="procedures[0][procedure]"]');
+                
+                if (providerSelect && providerSelect.value && firstProcedureSelect && firstProcedureSelect.value) {
+                    const provider = encodeURIComponent(providerSelect.value);
+                    const procedure1 = encodeURIComponent(firstProcedureSelect.value);
+                    apiEndpoint = `/api/procedures2/${provider}/${procedure1}`;
+                    logMessage = 'procedure2 (filtered by provider and procedure1)';
+                } else {
+                    // Fallback to all procedure 2 items if provider or procedure 1 not selected
+                    apiEndpoint = '/api/procedures2';
+            
+            // Fetch procedures from appropriate API endpoint
             const response = await fetch(apiEndpoint);
+                    logMessage = 'procedure2 (all items - provider/procedure1 not selected)';
+                }
+            }
             if (!response.ok) {
                 throw new Error(`Failed to load procedure items: ${response.status}`);
             }
