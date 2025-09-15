@@ -81,8 +81,20 @@ def get_procedures2_filtered(provider, procedure1):
     all_procedure2 = data_loader.get_procedures2()
     compatible_procedure2 = []
     
-    for proc2 in all_procedure2:
-        # Check if provider can perform this procedure 2
+    # Define procedure 1 to procedure 2 relationships
+    procedure_relationships = {
+        "Filling": ["Pulp Cap", "Sedation"],
+        "Implant surgery": ["Bone Graft", "Post", "Pulp Cap", "Root Canal Treated Tooth", "Sinus Lift", "Socket Preservation"],
+        "Root Canal": ["Post", "Pulp Cap"],
+        "Crown preparation": ["Post", "Pulp Cap"],
+        "Extraction": ["Bone Graft", "Socket Preservation"]
+    }
+    
+    # Get valid procedure 2 items for this procedure 1
+    valid_procedure2_for_procedure1 = procedure_relationships.get(procedure1, [])
+    
+    for proc2 in valid_procedure2_for_procedure1:
+        # Check if provider can perform this procedure 2 AND it is valid for this procedure 1
         if data_loader.check_provider_performs_procedure(provider, proc2):
             compatible_procedure2.append(proc2)
     
