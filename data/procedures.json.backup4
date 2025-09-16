@@ -1,5 +1,5 @@
 {
-  "Implant surgery": {
+  "Implant": {
     "assistant_time": 30.0,
     "doctor_time": 0.0,
     "total_time": 90.0,
@@ -9,6 +9,12 @@
     "assistant_time": 10.0,
     "doctor_time": 0.0,
     "total_time": 30.0,
+    "section": "procedure1"
+  },
+  "Crown": {
+    "assistant_time": 10.0,
+    "doctor_time": 0.0,
+    "total_time": 90.0,
     "section": "procedure1"
   },
   "Crown Delivery": {
@@ -42,10 +48,10 @@
     "section": "procedure1"
   },
   "Extraction": {
-    "assistant_time": 10.0,
+    "assistant_time": 0.0,
     "doctor_time": 0.0,
-    "total_time": 50.0,
-    "section": "procedure1"
+    "total_time": 10.0,
+    "section": "procedure2"
   },
   "Invisalign Insert 1": {
     "assistant_time": 30.0,
@@ -108,10 +114,10 @@
     "section": "procedure1"
   },
   "Sedation": {
-    "assistant_time": 55.0,
-    "doctor_time": 5.0,
+    "assistant_time": 0.0,
+    "doctor_time": 0.0,
     "total_time": 60.0,
-    "section": "procedure1"
+    "section": "procedure2"
   },
   "Botox": {
     "assistant_time": 15.0,
@@ -268,35 +274,5 @@
     "doctor_time": 0.0,
     "total_time": 10.0,
     "section": "procedure2"
-  },
-  "Extraction": {
-    "assistant_time": 0.0,
-    "doctor_time": 0.0,
-    "total_time": 10.0,
-    "section": "procedure2"
-  },
-  "Filling": {
-    "assistant_time": 0.0,
-    "doctor_time": 0.0,
-    "total_time": 20.0,
-    "section": "procedure2"
-  },
-  "Sedation": {
-    "assistant_time": 0.0,
-    "doctor_time": 0.0,
-    "total_time": 10.0,
-    "section": "procedure2"
-  },
-  "New Patient Exam": {
-    "assistant_time": 0.0,
-    "doctor_time": 30.0,
-    "total_time": 80.0,
-    "section": "procedure1"
-  },
-  "Crown preparation": {
-    "assistant_time": 10.0,
-    "doctor_time": 0.0,
-    "total_time": 90.0,
-    "section": "procedure1"
-  }  
+  }
 }
