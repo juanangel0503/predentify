@@ -266,7 +266,7 @@
   "New Patient Exam": {
     "assistant_time": 0.0,
     "doctor_time": 30.0,
-    "total_time": 30.0,
+    "total_time": 80.0,
     "section": "procedure1"
   },
   "Crown preparation": {
