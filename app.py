@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, jsonify, session
 from data_loader import ProcedureDataLoader
-from preauth.generator import PreAuthGenerator
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here-change-in-production'
@@ -84,48 +83,48 @@ def get_procedures2_filtered(provider, procedure1):
     # Define provider-specific procedure 1 to procedure 2 relationships
     provider_procedure_relationships = {
         "Dr. Miekella": {
-            "Implant surgery": ["Sinus Lift", "Bone Graft", "Socket Preservation", "Extraction", "Sedation"],
-            "Filling": ["Pulp Cap", "Sedation"],
-            "Crown preparation": ["Post", "Filling", "Sedation"],
-            "Crown Delivery": ["Filling", "Sedation"],
+            "Implant surgery": ["Sinus Lift", "Bone Graft", "Socket Preservation", "Additional Extraction", "Additional Sedation"],
+            "Filling": ["Pulp Cap", "Additional Filling", "Additional Sedation"],
+            "Crown preparation": ["Post", "Additional Filling", "Additional Sedation"],
+            "Crown Delivery": ["Additional Filling", "Additional Sedation"],
             "Implant Crown Impression": ["Filling"],
-            "Root Canal": ["Post", "Core & Crown Prep", "Sedation"],
-            "Gum Graft": ["Sedation"],
-            "Extraction": ["Bone Graft", "Socket Preservation", "Root Canal Treated Tooth", "Filling", "Sedation"],
+            "Root Canal": ["Post", "Core & Crown Prep", "Additional Sedation"],
+            "Gum Graft": ["Additional Sedation"],
+            "Extraction": ["Bone Graft", "Socket Preservation", "Root Canal Treated Tooth", "Additional Filling", "Additional Sedation"],
             "Invisalign Insert 2": [],
             "Invisalign Complete": [],
             "New Patient Exam": [],
-            "Pulpectomy": ["Sedation"],
+            "Pulpectomy": ["Additional Sedation"],
             "Sedation": []
         },
         "Dr. Kayla": {
-            "Filling": ["Pulp Cap", "Sedation"],
-            "Crown preparation": ["Post", "Filling", "Sedation"],
-            "Crown Delivery": ["Filling", "Sedation"],
+            "Filling": ["Pulp Cap", "Additional Filling", "Additional Sedation"],
+            "Crown preparation": ["Post", "Additional Filling", "Additional Sedation"],
+            "Crown Delivery": ["Additional Filling", "Additional Sedation"],
             "Implant Crown Impression": ["Filling"],
-            "Root Canal": ["Post", "Core & Crown Prep", "Sedation"],
-            "Extraction": ["Bone Graft", "Socket Preservation", "Root Canal Treated Tooth", "Filling", "Sedation"],
+            "Root Canal": ["Post", "Core & Crown Prep", "Additional Sedation"],
+            "Extraction": ["Bone Graft", "Socket Preservation", "Root Canal Treated Tooth", "Additional Filling", "Additional Sedation"],
             "Invisalign Insert 2": [],
             "Invisalign Complete": [],
             "New Patient Exam": [],
-            "Pulpectomy": ["Sedation"],
+            "Pulpectomy": ["Additional Sedation"],
             "Sedation": []
         },
         "Dr. Radin": {
-            "Filling": ["Pulp Cap", "Sedation"],
-            "Crown preparation": ["Post", "Filling", "Sedation"],
-            "Crown Delivery": ["Filling", "Sedation"],
+            "Filling": ["Pulp Cap", "Additional Filling", "Additional Sedation"],
+            "Crown preparation": ["Post", "Additional Filling", "Additional Sedation"],
+            "Crown Delivery": ["Additional Filling", "Additional Sedation"],
             "Implant Crown Impression": ["Filling"],
-            "Root Canal": ["Post", "Core & Crown Prep", "Sedation"],
-            "Extraction": ["Bone Graft", "Socket Preservation", "Root Canal Treated Tooth", "Filling", "Sedation"],
+            "Root Canal": ["Post", "Core & Crown Prep", "Additional Sedation"],
+            "Extraction": ["Bone Graft", "Socket Preservation", "Root Canal Treated Tooth", "Additional Filling", "Additional Sedation"],
             "Invisalign Insert 2": [],
             "Invisalign Complete": [],
             "New Patient Exam": [],
-            "Pulpectomy": ["Sedation"],
+            "Pulpectomy": ["Additional Sedation"],
             "Sedation": []
         },
         "Marina": {
-            "Crown Delivery": ["Filling", "Sedation"],
+            "Crown Delivery": ["Additional Filling", "Additional Sedation"],
             "Implant Crown Impression": ["Filling"],
             "Implant Follow-up": [],
             "Invisalign Insert 1": [],
@@ -133,7 +132,7 @@ def get_procedures2_filtered(provider, procedure1):
             "Invisalign Complete": [],
             "Impressions": [],
             "Consultation": [],
-            "Hygiene": ["Sedation"],
+            "Hygiene": ["Additional Sedation"],
             "New Patient Exam": [],
             "Post Op Exam": [],
             "Recall Exam": [],
@@ -153,7 +152,7 @@ def get_procedures2_filtered(provider, procedure1):
             "In Office Whitenings": []
         },
         "Monse": {
-            "Crown Delivery": ["Filling", "Sedation"],
+            "Crown Delivery": ["Additional Filling", "Additional Sedation"],
             "Implant Crown Impression": ["Filling"],
             "Implant Follow-up": [],
             "Invisalign Insert 1": [],
@@ -161,7 +160,7 @@ def get_procedures2_filtered(provider, procedure1):
             "Invisalign Complete": [],
             "Impressions": [],
             "Consultation": [],
-            "Hygiene": ["Sedation"],
+            "Hygiene": ["Additional Sedation"],
             "New Patient Exam": [],
             "Post Op Exam": [],
             "Recall Exam": [],
@@ -181,7 +180,7 @@ def get_procedures2_filtered(provider, procedure1):
             "In Office Whitenings": []
         },
         "Jessica": {
-            "Crown Delivery": ["Filling", "Sedation"],
+            "Crown Delivery": ["Additional Filling", "Additional Sedation"],
             "Implant Crown Impression": ["Filling"],
             "Implant Follow-up": [],
             "Invisalign Insert 1": [],
@@ -189,7 +188,7 @@ def get_procedures2_filtered(provider, procedure1):
             "Invisalign Complete": [],
             "Impressions": [],
             "Consultation": [],
-            "Hygiene": ["Sedation"],
+            "Hygiene": ["Additional Sedation"],
             "New Patient Exam": [],
             "Post Op Exam": [],
             "Recall Exam": [],
@@ -208,8 +207,8 @@ def get_procedures2_filtered(provider, procedure1):
             "In Office Whitenings": []
         },
         "Amber": {
-            "Filling": ["Pulp Cap", "Sedation"],
-            "Crown Delivery": ["Filling", "Sedation"],
+            "Filling": ["Pulp Cap", "Additional Filling", "Additional Sedation"],
+            "Crown Delivery": ["Additional Filling", "Additional Sedation"],
             "Implant Crown Impression": ["Filling"],
             "Implant Follow-up": [],
             "Invisalign Insert 1": [],
@@ -228,8 +227,8 @@ def get_procedures2_filtered(provider, procedure1):
             "Implant Planning": []
         },
         "Kym": {
-            "Filling": ["Pulp Cap", "Sedation"],
-            "Crown Delivery": ["Filling", "Sedation"],
+            "Filling": ["Pulp Cap", "Additional Filling", "Additional Sedation"],
+            "Crown Delivery": ["Additional Filling", "Additional Sedation"],
             "Implant Crown Impression": ["Filling"],
             "Implant Follow-up": [],
             "Invisalign Insert 1": [],
@@ -247,8 +246,8 @@ def get_procedures2_filtered(provider, procedure1):
             "Emergency Exam": []
         },
         "Natalia": {
-            "Filling": ["Pulp Cap", "Sedation"],
-            "Crown Delivery": ["Filling", "Sedation"],
+            "Filling": ["Pulp Cap", "Additional Filling", "Additional Sedation"],
+            "Crown Delivery": ["Additional Filling", "Additional Sedation"],
             "Implant Crown Impression": ["Filling"],
             "Implant Follow-up": [],
             "Invisalign Insert 1": [],
@@ -266,7 +265,7 @@ def get_procedures2_filtered(provider, procedure1):
             "Emergency Exam": []
         },
         "Hygiene": {
-            "Hygiene": ["Sedation"],
+            "Hygiene": ["Additional Sedation"],
             "New Patient Exam": [],
             "Kids Hygiene 8-11": []
         }
@@ -304,6 +303,26 @@ def get_providers_for_procedure(procedure):
 def get_mitigating_factors():
     """API endpoint to get mitigating factors"""
     return jsonify(data_loader.get_mitigating_factors())
+
+@app.route("/api/mitigating-factors/<procedure>")
+def get_mitigating_factors_for_procedure(procedure):
+    """Return mitigating factors applicable to the given procedure."""
+    factors = data_loader.get_mitigating_factors()
+    # Normalize common aliases
+    if procedure == "Implant":
+        procedure = "Implant surgery"
+    if procedure == "Crown":
+        procedure = "Crown preparation"
+    applicable = []
+    for f in factors:
+        applies = f.get("applies_to")
+        if not applies or procedure in applies:
+            applicable.append({
+                "name": f.get("name"),
+                "value": f.get("value"),
+                "is_multiplier": f.get("is_multiplier", False)
+            })
+    return jsonify(applicable)
 
 # Pre-Authorization Generator Routes
 @app.route('/preauth')

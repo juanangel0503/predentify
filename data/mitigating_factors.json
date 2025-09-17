@@ -2,56 +2,166 @@
   {
     "name": "Special Needs",
     "value": 10.0,
-    "is_multiplier": true
+    "is_multiplier": false,
+    "applies_to": [
+      "Implant surgery",
+      "Filling",
+      "Crown preparation",
+      "Crown Delivery",
+      "Root Canal",
+      "Gum Graft",
+      "Extraction",
+      "Pulpectomy"
+    ]
   },
   {
     "name": "Language Barrier",
     "value": 10.0,
-    "is_multiplier": true
+    "is_multiplier": false,
+    "applies_to": [
+      "Implant surgery",
+      "Filling",
+      "Crown preparation",
+      "Crown Delivery",
+      "Root Canal",
+      "Gum Graft",
+      "Extraction",
+      "Pulpectomy"
+    ]
   },
   {
     "name": "PITA",
     "value": 10.0,
-    "is_multiplier": true
+    "is_multiplier": false,
+    "applies_to": [
+      "Implant surgery",
+      "Filling",
+      "Crown preparation",
+      "Crown Delivery",
+      "Root Canal",
+      "Gum Graft",
+      "Extraction",
+      "Pulpectomy"
+    ]
   },
   {
     "name": "TLC",
     "value": 10.0,
-    "is_multiplier": true
+    "is_multiplier": false,
+    "applies_to": [
+      "Implant surgery",
+      "Filling",
+      "Crown preparation",
+      "Crown Delivery",
+      "Root Canal",
+      "Gum Graft",
+      "Extraction",
+      "Pulpectomy"
+    ]
   },
   {
     "name": "Extra Freezing Required",
     "value": 10.0,
-    "is_multiplier": true
+    "is_multiplier": false,
+    "applies_to": [
+      "Implant surgery",
+      "Filling",
+      "Crown preparation",
+      "Crown Delivery",
+      "Root Canal",
+      "Gum Graft",
+      "Extraction",
+      "Pulpectomy"
+    ]
   },
   {
     "name": "Limited Opening / TMJ Issues",
     "value": 10.0,
-    "is_multiplier": true
+    "is_multiplier": false,
+    "applies_to": [
+      "Implant surgery",
+      "Filling",
+      "Crown preparation",
+      "Crown Delivery",
+      "Root Canal",
+      "Gum Graft",
+      "Extraction",
+      "Pulpectomy"
+    ]
   },
   {
     "name": "Cosmetic Case (Anterior crown or Veneer)",
     "value": 10.0,
-    "is_multiplier": true
+    "is_multiplier": false,
+    "applies_to": [
+      "Implant surgery",
+      "Filling",
+      "Crown preparation",
+      "Crown Delivery",
+      "Root Canal",
+      "Gum Graft",
+      "Extraction",
+      "Pulpectomy"
+    ]
   },
   {
     "name": "Provider Learning Curve",
     "value": 1.15,
-    "is_multiplier": true
+    "is_multiplier": true,
+    "applies_to": [
+      "Implant surgery",
+      "Filling",
+      "Crown preparation",
+      "Crown Delivery",
+      "Root Canal",
+      "Gum Graft",
+      "Extraction",
+      "Pulpectomy"
+    ]
   },
   {
     "name": "Assistant Unfamiliarity",
     "value": 1.1,
-    "is_multiplier": true
+    "is_multiplier": true,
+    "applies_to": [
+      "Implant surgery",
+      "Filling",
+      "Crown preparation",
+      "Crown Delivery",
+      "Root Canal",
+      "Gum Graft",
+      "Extraction",
+      "Pulpectomy"
+    ]
   },
   {
     "name": "Need for Informed Consent or Discussion",
     "value": 10.0,
-    "is_multiplier": true
+    "is_multiplier": false,
+    "applies_to": [
+      "Implant surgery",
+      "Filling",
+      "Crown preparation",
+      "Crown Delivery",
+      "Root Canal",
+      "Gum Graft",
+      "Extraction",
+      "Pulpectomy"
+    ]
   },
   {
     "name": "Uncomplicated / Simple",
     "value": 0.85,
-    "is_multiplier": true
+    "is_multiplier": true,
+    "applies_to": [
+      "Implant surgery",
+      "Filling",
+      "Crown preparation",
+      "Crown Delivery",
+      "Root Canal",
+      "Gum Graft",
+      "Extraction",
+      "Pulpectomy"
+    ]
   }
 ]

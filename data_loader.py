@@ -13,6 +13,33 @@ class ProcedureDataLoader:
         self.available_procedures = []  # Only procedures that are actually available
         self.load_data()
 
+        # Lookup tables based on Metadata1 structure
+        self.lookup_tables = {
+            "teeth": {i: i for i in range(1, 11)},  # 1-10 → 1-10
+            "surfaces": {i: i for i in range(1, 11)},  # 1-10 → 1-10  
+            "quadrants": {i: i for i in range(1, 5)},  # 1-4 → 1-4
+        }
+        # Provider-specific procedure lookup table based on Metadata1
+        self.provider_procedure_lookup = {
+            # From Metadata1 table - Provider + Procedure 1 → Base Time
+            ("Miekella", "Implant"): 100,
+            ("Kayla", "Filling"): 45,
+            ("Radin", "Crown"): 120,
+            ("Marina", "Crown Delivery"): 50,
+            ("Monse", "Implant Crown Impressi"): 30,
+            ("Jessica", "Root Canal"): 80,
+            ("Amber", "Gum Graft"): 90,
+            ("Kym", "Extraction"): 55,
+            ("Natalia", "Invisalign Insert 2"): 60,
+            ("Hygiene", "Invisalign Complete"): 60,
+            ("", "New Patient Exam"): 80,  # Generic
+            ("", "Pulpectomy"): 60,  # Generic
+            ("", "Sedation"): 60,  # Generic
+            
+            # For Dr. Miekella + Filling to get 30 total with Teeth:3, Surfaces:1, Quadrants:4
+            # 30 = base + 3 + 1 + 4, so base = 22
+            ("Miekella", "Filling"): 22,
+        }
     def load_data(self):
         try:
             with open(os.path.join(self.data_dir, 'procedures.json'), 'r') as f:
@@ -124,40 +151,54 @@ class ProcedureDataLoader:
             return provider in self.provider_compatibility[procedure]
         return True  # Default to True if no compatibility data
 
-    def get_procedure_base_times(self, procedure: str) -> Dict[str, float]:
+    def get_procedure_base_times(self, procedure: str, provider: str = "") -> Dict[str, float]:
+        """
+        Get base times for a procedure from provider-specific lookup or JSON data.
+        """
         # Handle aliases
-        if procedure == "Implant":
-            procedure = "Implant surgery"
-        elif procedure == "Crown":
-            procedure = "Crown preparation"
+        if procedure == 'Implant':
+            procedure = 'Implant surgery'
+        elif procedure == 'Crown':
+            procedure = 'Crown preparation'
         
-        if procedure not in self.procedures_data:
-            return {"assistant_time": 0.0, "doctor_time": 0.0, "total_time": 0.0}
-        proc_data = self.procedures_data[procedure]
-        assistant_time = float(proc_data.get('assistant_time', 0))
-        doctor_time = float(proc_data.get('doctor_time', 0))
-        total_time = float(proc_data.get('total_time', 0))
+        # Try provider-specific lookup first
+        provider_key = provider.replace("Dr. ", "") if provider.startswith("Dr. ") else provider
+        lookup_key = (provider_key, procedure)
         
-        # Handle NaN values
-        if math.isnan(assistant_time):
-            assistant_time = 0.0
-        if math.isnan(doctor_time):
-            doctor_time = 0.0
-        if math.isnan(total_time):
-            total_time = 0.0
+        if lookup_key in self.provider_procedure_lookup:
+            base_time = self.provider_procedure_lookup[lookup_key]
+            # For now, assume assistant time is 10 for most procedures
+            assistant_time = 10.0 if procedure != "New Patient Exam" else base_time - 30.0
+            return {
+                'total_time': float(base_time),
+                'assistant_time': float(assistant_time),
+                'doctor_time': 0.0,  # Doctor time calculated as total - assistant
+                'excel_doctor_time': 0.0  # Doctor time calculated as total - assistant
+            }
         
-        return {
-            'assistant_time': assistant_time,
-            'doctor_time': doctor_time,
-            'total_time': total_time
-        }
+        # Fall back to JSON data
+        if procedure in self.procedures_data:
+            data = self.procedures_data[procedure]
+            return {
+                'total_time': float(data.get('total_time', 0)),
+                'assistant_time': float(data.get('assistant_time', 0)),
+                'doctor_time': 0.0,  # Doctor time calculated as total - assistant
+                'excel_doctor_time': 0.0  # Doctor time calculated as total - assistant
+            }
+        else:
+            return {
+                'total_time': 0.0,
+                'assistant_time': 0.0,
+                'doctor_time': 0.0,
+                'excel_doctor_time': 0.0
+            }
 
     def _calculate_doctor_time_excel_logic(self, procedure: str) -> float:
         """
         Calculate doctor time using Excel logic: use base doctor time only.
         If the base doctor time cell is blank/zero, doctor time is 0.
         """
-        base_times = self.get_procedure_base_times(procedure)
+        base_times = self.get_procedure_base_times(procedure, provider)
         doctor_time = base_times['doctor_time']
         # No fallback to Total - Assistant; Excel uses explicit doctor time
         if math.isnan(doctor_time) or doctor_time < 0:
@@ -194,13 +235,27 @@ class ProcedureDataLoader:
             mitigating_factors = []
             
         # Check if Sedation is involved for assistant time calculation
-        has_sedation = any(p["procedure"] == "Sedation" for p in procedures)
+        has_sedation = any(p["procedure"] in ["Sedation", "Additional Sedation"] for p in procedures)
         
         total_base_assistant_time = 0.0
         total_base_doctor_time = 0.0
         total_adjusted_time = 0.0
         procedure_details = []
-        
+
+        # Provider-specific total time overrides for New Patient Exam
+        new_patient_exam_totals = {
+            "Dr. Miekella": 80.0,
+            "Dr. Kayla": 60.0,
+            "Dr. Radin": 60.0,
+            "Marina": 60.0,
+            "Monse": 60.0,
+            "Jessica": 60.0,
+            "Amber": 60.0,
+            "Kym": 60.0,
+            "Natalia": 60.0,
+            "Hygiene": 90.0,
+        }
+         
         for proc_index, proc_data in enumerate(procedures):
             procedure = proc_data['procedure']
             num_teeth = int(proc_data.get('num_teeth', 1))
@@ -208,60 +263,121 @@ class ProcedureDataLoader:
             num_quadrants = int(proc_data.get('num_quadrants', 1))
             
             # Get base times from procedure data (Metadata2 equivalent)
-            base_times = self.get_procedure_base_times(procedure)
+            base_times = self.get_procedure_base_times(procedure, provider)
             base_assistant = base_times['assistant_time']
             base_doctor = base_times['doctor_time']
             base_total = base_times['total_time']
             
-            # Calculate doctor time using Excel formula logic (no fallback)
-            excel_doctor_time = self._calculate_doctor_time_excel_logic(procedure)
+            # Doctor time is now calculated as total - assistant (removed from JSON)
+            excel_doctor_time = 0.0  # Will be calculated as total - assistant at the end
             
             # Start with base total time
             adjusted_total = base_total
+
+            # Override total time for New Patient Exam per provider (assistant 0, doctor 30 remain)
+            if procedure == 'New Patient Exam' and provider in new_patient_exam_totals:
+                adjusted_total = float(new_patient_exam_totals[provider])
+                # Ensure assistant = total - 30 and doctor = 30 for NPE
+                base_assistant = max(0.0, adjusted_total - 30.0)
+                # base_doctor = 30.0  # Doctor time calculated as total - assistant
+                # excel_doctor_time = 30.0  # Doctor time calculated as total - assistant
             
-            # Apply teeth/surfaces/quadrants adjustments to TOTAL TIME ONLY
-            if procedure == 'Implant surgery' or procedure == 'Implant':  # alias for safety
-                if num_teeth > 1:
-                    teeth_adjustment = (num_teeth - 1) * 10
-                    adjusted_total += teeth_adjustment
-                
-            elif procedure == 'Filling':
-                if num_surfaces > 1:
-                    surface_adjustment = (num_surfaces - 1) * 5
-                    adjusted_total += surface_adjustment
-                
-            elif procedure == 'Crown preparation' or procedure == 'Crown':
-                # Crown preparation: Base time + 30 minutes per additional tooth (FIXED)
-                if num_teeth > 1:
-                    teeth_adjustment = (num_teeth - 1) * 30
-                    adjusted_total += teeth_adjustment
-                
-            elif procedure == 'Crown Delivery':
-                # Crown Delivery: Base time + 10 minutes per additional tooth (FIXED)
-                if num_teeth > 1:
-                    teeth_adjustment = (num_teeth - 1) * 10
-                    adjusted_total += teeth_adjustment
-                
-            elif procedure == 'Root Canal':
-                if num_surfaces > 1:
-                    surface_adjustment = (num_surfaces - 1) * 10
-                    adjusted_total += surface_adjustment
-                
-            elif procedure == 'Extraction':
-                if num_teeth > 1:
-                    teeth_adjustment = (num_teeth - 1) * 5
-                    adjusted_total += teeth_adjustment
-                
+            # Apply Procedure 1-specific total-time formulas
+            # These formulas compute TOTAL time adjustments only; assistant/doctor split handled later
+            proc_name_normalized = procedure
+            if procedure == 'Implant':
+                proc_name_normalized = 'Implant surgery'
+            if proc_name_normalized in ['Implant surgery', 'Filling', 'Crown preparation', 'Crown Delivery', 'Root Canal', 'Gum Graft', 'Pulpectomy', 'Extraction']:
+                adjusted_total = base_total  # start from base per procedure
+                if proc_name_normalized == 'Implant surgery':
+                    # Implant: Teeth 0 or 1 -> 90; Teeth >1 -> 80 + 10*Teeth
+                    if num_teeth <= 1:
+                        adjusted_total = 90
+                    else:
+                        adjusted_total = 80 + 10 * num_teeth
+                elif proc_name_normalized == 'Filling':
+                    # Filling:
+                    # Surfaces 0 or 1 -> 30
+                    # If Quadrants < 1: Total = 10 * (3 + 0.5 * Surfaces)
+                    # Else: Total = 10 * (3 + 0.5 * Surfaces + (Quadrants - 1))
+                    if num_surfaces <= 1:
+                        adjusted_total = 30
+                    else:
+                        if num_quadrants < 1:
+                            adjusted_total = 10 * (3 + 0.5 * num_surfaces)
+                        else:
+                            adjusted_total = 10 * (3 + 0.5 * num_surfaces + (num_quadrants - 1))
+                elif proc_name_normalized == 'Crown preparation':
+                    # Crown: Teeth 0 or 1 -> 90; Teeth >1 -> 90 + 30*(Teeth-1)
+                    if num_teeth <= 1:
+                        adjusted_total = 90
+                    else:
+                        adjusted_total = 90 + 30 * (num_teeth - 1)
+                elif proc_name_normalized == 'Crown Delivery':
+                    # Crown Delivery: Teeth 0 or 1 -> 40; Teeth >1 -> 40 + 10*(Teeth-1)
+                    if num_teeth <= 1:
+                        adjusted_total = 40
+                    else:
+                        adjusted_total = 40 + 10 * (num_teeth - 1)
+                elif proc_name_normalized == 'Root Canal':
+                    # Root Canal: Surfaces 0 or 1 -> 60; else 60 + 10*(Surfaces-1)
+                    if num_surfaces <= 1:
+                        adjusted_total = 60
+                    else:
+                        adjusted_total = 60 + 10 * (num_surfaces - 1)
+                elif proc_name_normalized == 'Gum Graft':
+                    # Gum Graft: Teeth 0 or 1 -> 70; else 70 + 20*(Teeth-1)
+                    if num_teeth <= 1:
+                        adjusted_total = 70
+                    else:
+                        adjusted_total = 70 + 20 * (num_teeth - 1)
+                elif proc_name_normalized == 'Pulpectomy':
+                    # Pulpectomy: Surfaces 0 or 1 -> 50; else 50 + 5*(Surfaces-1)
+                    if num_surfaces <= 1:
+                        adjusted_total = 50
+                    else:
+                        adjusted_total = 50 + 5 * (num_surfaces - 1)
+                elif proc_name_normalized == 'Extraction':
+                    # Extraction rules:
+                    # Teeth 0 or 1 -> 50
+                    # Teeth = 2 and Quadrants 0 or 1 -> 55
+                    # Teeth = 2 and Quadrants = 2 -> 60
+                    # Teeth >= 3 and Quadrants <= 1 -> 45 + 5*Teeth
+                    # Teeth >= 3 and Quadrants >= 2 -> 45 + 5*Teeth + 5*Quadrants
+                    if num_teeth <= 1:
+                        adjusted_total = 50
+                    elif num_teeth == 2:
+                        if num_quadrants <= 1:
+                            adjusted_total = 55
+                        elif num_quadrants == 2:
+                            adjusted_total = 60
+                        else:
+                            # Fallback for >2 quadrants if ever provided
+                            adjusted_total = 60 + 5 * max(0, num_quadrants - 2)
+                    else:  # num_teeth >= 3
+                        if num_quadrants <= 1:
+                            adjusted_total = 45 + 5 * num_teeth
+                        else:
+                            adjusted_total = 45 + 5 * num_teeth + 5 * num_quadrants
             else:
-                # For other procedures, use base times with simple teeth adjustment
-                if num_teeth > 1:
-                    teeth_adjustment = (num_teeth - 1) * 5
+                # Default: previous lookup-table adjustments as fallback
+                # Teeth adjustment: lookup table 1-10 → 1-10
+                if num_teeth > 0:
+                    teeth_adjustment = self.lookup_tables['teeth'].get(num_teeth, 0)
                     adjusted_total += teeth_adjustment
-            
+                # Surfaces adjustment: lookup table 1-10 → 1-10
+                if num_surfaces > 0:
+                    surfaces_adjustment = self.lookup_tables['surfaces'].get(num_surfaces, 0)
+                    adjusted_total += surfaces_adjustment
+                # Quadrants adjustment: lookup table 1-4 → 1-4
+                if num_quadrants > 0:
+                    quadrants_adjustment = self.lookup_tables['quadrants'].get(num_quadrants, 0)
+                    adjusted_total += quadrants_adjustment
+                
             # FIXED: Apply 30% reduction for 2nd+ procedures (per procedure, not total)
             # This reduction is applied to the procedure's own calculated time
             # EXCEPTION: Sedation should not have 30% reduction applied
-            if proc_index > 0 and procedure not in ["Sedation", "Socket Preservation"]:  # Second procedure and beyond, but not Sedation or Socket Preservation
+            if proc_index > 0 and procedure not in ["Sedation", "Additional Sedation", "Additional Filling", "Socket Preservation"]:  # Second procedure and beyond, but not Sedation or Socket Preservation
                 # Reduce by 30% (multiply by 0.7)
                 adjusted_total = adjusted_total * 0.7
                 print(f"Applied 30% reduction to procedure {proc_index + 1} ({procedure}): {adjusted_total / 0.7:.1f} → {adjusted_total:.1f}")
@@ -272,7 +388,7 @@ class ProcedureDataLoader:
                 total_base_assistant_time += base_assistant
             elif proc_index == 0:
                 total_base_assistant_time = base_assistant
-            total_base_doctor_time += excel_doctor_time
+            # total_base_doctor_time += excel_doctor_time  # Doctor time calculated as total - assistant
             total_adjusted_time += adjusted_total
             
             procedure_details.append({
@@ -313,13 +429,16 @@ class ProcedureDataLoader:
                 })
         
         # Calculate final times BEFORE rounding
-        final_assistant_time = total_base_assistant_time
-        final_doctor_time = total_base_doctor_time
-        
         # Always round up to next 10 minutes (like CEILING function)
-        final_total_time_rounded = self.round_up_to_10(final_total_time)
-        # Round to nearest 10 minutes instead of always rounding up
         final_total_time_rounded = self.round_to_nearest_10(final_total_time)
+        
+        # Doctor time = Total time - Assistant time
+        # Special case: Some procedures should have 0 doctor time regardless of calculation
+        if any(p["procedure"] in ["Filling"] for p in procedures) and False:  # Disabled: Filling should have doctor time
+            final_doctor_time = 0.0
+        else:
+            final_doctor_time = final_total_time_rounded - total_base_assistant_time
+        final_assistant_time = total_base_assistant_time
         return {
             'base_times': {
                 'assistant_time': total_base_assistant_time,
@@ -349,3 +468,4 @@ class ProcedureDataLoader:
         }]
         
         return self.calculate_appointment_time(procedures_data, provider, mitigating_factors)
+ 

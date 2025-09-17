@@ -1,70 +1,48 @@
 {
   "Implant surgery": [
     "Bone Graft",
-    "Post",
-    "Pulp Cap",
-    "Root Canal Treated Tooth",
-    "Sedation",
+    "Additional Sedation",
     "Sinus Lift",
-    "Socket Preservation"
+    "Socket Preservation",
+    "Additional Extraction"
   ],
   "Filling": [
-    "Bone Graft",
     "Pulp Cap",
-    "Sedation"
+    "Additional Sedation"
   ],
   "Crown preparation": [
-    "Filling",
+    "Additional Filling",
     "Post",
-    "Pulp Cap",
-    "Sedation"
+    "Additional Sedation"
   ],
   "Crown Delivery": [
-    "Root Canal Treated Tooth",
-    "Sedation"
+    "Additional Filling",
+    "Additional Sedation"
   ],
   "Implant Crown Impression": [
-    "Filling",
-    "Post",
-    "Sedation"
+    "Additional Filling"
   ],
   "Implant Follow-up": [
-    "Core & Crown Prep"
   ],
   "Root Canal": [
-    "Extraction",
-    "Filling",
+    "Additional Extraction",
     "Post",
-    "Pulp Cap",
-    "Sedation"
+    "Additional Sedation"
   ],
   "Gum Graft": [
-    "Filling",
-    "Sedation"
+    "Additional Sedation"
   ],
   "Extraction": [
     "Bone Graft",
-    "Filling",
-    "Pulp Cap",
-    "Sedation",
-    "Socket Preservation"
+    "Additional Filling",
+    "Additional Sedation",
+    "Socket Preservation",
+    "Root Canal Treated Tooth"
   ],
-  "Invisalign Insert 1": [
-    "Sedation"
+  "Hygiene": [
+    "Additional Sedation"
   ],
   "Pulpectomy": [
-    "Sedation"
-  ],
-  "New Patient Exam": [
-    "Filling",
-    "Sedation"
-  ],
-  "Emergency Exam": [
-    "Filling",
-    "Sedation"
-  ],
-  "Consultation": [
-    "Filling",
-    "Sedation"
+    "Additional Sedation"
   ]
 }

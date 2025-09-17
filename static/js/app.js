@@ -263,6 +263,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (this.name === "procedures[0][procedure]") {
                     console.log("🔄 First procedure changed, resetting additional procedures");
                     resetFormFields();
+                    // Fetch applicable mitigating factors for this procedure
+                    fetch(`/api/mitigating-factors/${encodeURIComponent(this.value)}`)
+                      .then(r => r.json())
+                      .then(factors => {
+                        const names = new Set(factors.map(f => f.name));
+                        document.querySelectorAll('input[name="mitigating_factors"]').forEach(cb => {
+                          const row = cb.closest('label') || cb.closest('.form-check') || cb.parentElement;
+                          if (names.has(cb.value)) {
+                            row.style.display = '';
+                          } else {
+                            row.style.display = 'none';
+                            cb.checked = false;
+                          }
+                        });
+                      })
+                      .catch(() => {});
                 } else {
                     console.log("🔄 Additional procedure changed, no reset needed");
                 }
@@ -850,6 +866,26 @@ document.addEventListener('DOMContentLoaded', function() {
             // Initialize procedure options (load all procedures initially)
             updateProcedureOptions('');
             
+            // After initial load, fetch applicable mitigating factors for the first selected procedure (if any)
+            const firstProcSelect = document.querySelector('.procedure-item select.procedure-select');
+            if (firstProcSelect && firstProcSelect.value) {
+                fetch(`/api/mitigating-factors/${encodeURIComponent(firstProcSelect.value)}`)
+                    .then(r => r.json())
+                    .then(factors => {
+                        const names = new Set(factors.map(f => f.name));
+                        document.querySelectorAll('input[name="mitigating_factors"]').forEach(cb => {
+                            const row = cb.closest('label') || cb.closest('.form-check') || cb.parentElement;
+                            if (names.has(cb.value)) {
+                                row.style.display = '';
+                            } else {
+                                row.style.display = 'none';
+                                cb.checked = false;
+                            }
+                        });
+                    })
+                    .catch(() => {});
+            }
+            
             // Initialize field visibility only if we have procedure items
             if (document.querySelectorAll('.procedure-item').length > 0) {
                 updateFieldVisibility();
@@ -876,3 +912,4 @@ document.addEventListener('DOMContentLoaded', function() {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
 });
+ 
