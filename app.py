@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify, session
 from data_loader import ProcedureDataLoader
 
+from preauth_generator import PreAuthGenerator
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here-change-in-production'
 
@@ -352,14 +353,6 @@ def generate_preauth():
             insurer=insurer
         )
         
-        # Store case record in session (simplified for now)
-        # Note: In production, you'd want proper serialization for enums
-        session['current_case'] = {
-            'clinical_text': clinical_text,
-            'procedure': procedure,
-            'insurer': insurer,
-            'extracted_info': result.extracted_info.__dict__ if hasattr(result.extracted_info, '__dict__') else {}
-        }
         
         return jsonify({
             'success': True,
